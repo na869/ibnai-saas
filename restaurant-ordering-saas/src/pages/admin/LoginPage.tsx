@@ -138,17 +138,6 @@ const AdminLogin: React.FC = () => {
               Login as Admin
             </Button>
           </form>
-
-          {/* Info Box */}
-          <div className="mt-6 p-4 bg-bg-subtle rounded-lg">
-            <p className="text-sm text-text-secondary">
-              <strong>Default credentials:</strong>
-              <br />
-              Email: admin@foodorder.com
-              <br />
-              Password: admin123
-            </p>
-          </div>
         </Card>
       </div>
     </div>
