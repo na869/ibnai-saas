@@ -1,5 +1,4 @@
 {
-  "outputDirectory": "restaurant-ordering-saas/dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
