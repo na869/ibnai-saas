@@ -1,4 +1,12 @@
 {
+  "name": "ibnai-saas",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix restaurant-ordering-saas",
+    "build": "npm run build --prefix restaurant-ordering-saas",
+    "preview": "npm run preview --prefix restaurant-ordering-saas",
+    "lint": "npm run lint --prefix restaurant-ordering-saas"
+  },
   "devDependencies": {
     "@types/node": "^25.2.1"
   }
