@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Store, ArrowLeft, Mail, Lock, AlertCircle } from "lucide-react";
+import { Store, ArrowLeft, Mail, Lock } from "lucide-react";
 import { Button, Input, Alert, Card } from "../../components/ui";
 import { APP_CONFIG } from "../../config/config";
 import { supabase } from "../../config/supabase";
@@ -172,22 +172,6 @@ const LoginPage: React.FC = () => {
             <Alert type="error" message={error} className="mb-6" />
           )}
 
-          {/* Demo Credentials */}
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm font-semibold text-blue-800 mb-2">
-              🎯 Demo Account - Try it out!
-            </p>
-            <div className="text-sm text-blue-700 space-y-1">
-              <p>
-                <span className="font-medium">Email:</span>{" "}
-                demorestaurant@gmail.com
-              </p>
-              <p>
-                <span className="font-medium">Password:</span> ATVSW679
-              </p>
-            </div>
-          </div>
-
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
@@ -237,17 +221,6 @@ const LoginPage: React.FC = () => {
               className="text-accent font-medium hover:underline"
             >
               Register your restaurant
-            </Link>
-          </div>
-
-          {/* Admin Login */}
-          <div className="mt-6 pt-6 border-t border-border text-center">
-            <Link
-              to="/admin/login"
-              className="text-sm text-text-secondary hover:text-text flex items-center justify-center"
-            >
-              <AlertCircle className="w-4 h-4 mr-2" />
-              Admin Login
             </Link>
           </div>
         </Card>
