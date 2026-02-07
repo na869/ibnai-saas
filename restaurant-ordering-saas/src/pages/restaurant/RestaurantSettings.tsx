@@ -246,9 +246,9 @@ const RestaurantSettings: React.FC = () => {
                     </div>
                     <Button
                       variant="outline"
-                      size="icon"
+                      size="sm"
                       onClick={copyToClipboard}
-                      className="shrink-0 h-[46px] w-[46px]"
+                      className="shrink-0 h-[46px] w-[46px] !p-0"
                     >
                       {copied ? <Check className="w-5 h-5 text-success" /> : <Copy className="w-5 h-5" />}
                     </Button>
