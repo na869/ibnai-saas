@@ -99,6 +99,10 @@ const RegisterPage: React.FC = () => {
             phone: formData.phone.replace(/[\s\-()]/g, ""),
             email: formData.email.trim().toLowerCase(),
             city: formData.city.trim(),
+            address: formData.address.trim(),
+            restaurant_type: formData.restaurant_type,
+            heard_from: formData.heard_from,
+            notes: formData.notes.trim(),
             status: "pending",
           },
         ]);

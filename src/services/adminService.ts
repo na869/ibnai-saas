@@ -88,6 +88,7 @@ export const createRestaurantAccount = async (
         p_email: data.email,
         p_city: request.city,
         p_address: request.address || null,
+        p_restaurant_type: request.restaurant_type,
         p_subscription_plan: data.subscriptionPlan,
         p_password_hash: passwordHash,
         p_internal_notes: data.internalNotes || null,

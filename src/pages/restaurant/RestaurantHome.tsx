@@ -7,15 +7,20 @@ import { formatCurrency } from "../../utils/helpers";
 const RestaurantHome: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [user] = useState<any>(() => {
+    const userData = localStorage.getItem("user");
+    return userData ? JSON.parse(userData) : null;
+  });
+
+  const restaurantType = user?.restaurant?.type || "Restaurant";
 
   const loadStats = React.useCallback(async () => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (!user.restaurant_id) return;
+    if (!user?.restaurant_id) return;
 
     const data = await getRestaurantStats(user.restaurant_id);
     setStats(data);
     setLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     loadStats();
@@ -24,6 +29,22 @@ const RestaurantHome: React.FC = () => {
   if (loading) {
     return <Loading text="Loading dashboard..." />;
   }
+
+  const getCustomLabel = (type: string, defaultLabel: string) => {
+    const typeLower = type.toLowerCase();
+    if (typeLower === "bakery") {
+      if (defaultLabel === "Menu Items") return "Bake Items";
+      if (defaultLabel === "Manage Menu") return "Manage Bake Items";
+    }
+    if (typeLower === "cloud kitchen" || typeLower === "quick service") {
+      if (defaultLabel === "Orders") return "Kitchen Orders";
+      if (defaultLabel === "View Orders") return "View Kitchen Orders";
+    }
+    if (typeLower === "cafe") {
+      if (defaultLabel === "Menu Items") return "Beverages & Snacks";
+    }
+    return defaultLabel;
+  };
 
   const statCards = [
     {
@@ -48,7 +69,7 @@ const RestaurantHome: React.FC = () => {
       bgColor: "bg-success/10",
     },
     {
-      title: "Menu Items",
+      title: getCustomLabel(restaurantType, "Menu Items"),
       value: stats?.totalMenuItems || 0,
       icon: UtensilsCrossed,
       color: "text-accent-secondary",
@@ -60,9 +81,11 @@ const RestaurantHome: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-text mb-2">Dashboard</h2>
+        <h2 className="text-2xl font-bold text-text mb-2">
+          {restaurantType} Dashboard
+        </h2>
         <p className="text-text-secondary">
-          Welcome back! Here's your restaurant overview
+          Welcome back! Here's your {restaurantType.toLowerCase()} overview
         </p>
       </div>
 
@@ -92,7 +115,9 @@ const RestaurantHome: React.FC = () => {
             className="p-4 border border-border rounded-lg hover:border-accent hover:bg-accent/5 transition-colors text-center"
           >
             <ShoppingBag className="w-8 h-8 text-accent mx-auto mb-2" />
-            <p className="font-medium text-text">View Orders</p>
+            <p className="font-medium text-text">
+              {getCustomLabel(restaurantType, "View Orders")}
+            </p>
             <p className="text-sm text-text-secondary">
               Manage incoming orders
             </p>
@@ -102,7 +127,9 @@ const RestaurantHome: React.FC = () => {
             className="p-4 border border-border rounded-lg hover:border-accent hover:bg-accent/5 transition-colors text-center"
           >
             <UtensilsCrossed className="w-8 h-8 text-accent mx-auto mb-2" />
-            <p className="font-medium text-text">Manage Menu</p>
+            <p className="font-medium text-text">
+              {getCustomLabel(restaurantType, "Manage Menu")}
+            </p>
             <p className="text-sm text-text-secondary">Update items & prices</p>
           </a>
           <a

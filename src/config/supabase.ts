@@ -52,6 +52,7 @@ export interface Restaurant {
   address?: string;
   restaurant_type?: string;
   logo_url?: string;
+  cover_image_url?: string;
   qr_code_url?: string;
   subscription_plan: "free_trial" | "starter" | "pro" | "enterprise";
   status: "active" | "blocked" | "trial";

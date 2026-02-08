@@ -105,6 +105,7 @@ const LoginPage: React.FC = () => {
           restaurant: {
             name: userData.restaurant_name,
             slug: userData.restaurant_slug,
+            type: userData.restaurant_type,
             is_active: userData.restaurant_is_active,
           },
           temp_password: userData.temp_password,

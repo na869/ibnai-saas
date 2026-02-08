@@ -338,6 +338,9 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             <p className="text-text-secondary">
               <strong>City:</strong> {request.city}
             </p>
+            <p className="text-text-secondary">
+              <strong>Type:</strong> {request.restaurant_type}
+            </p>
           </div>
         </div>
 

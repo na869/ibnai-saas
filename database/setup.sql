@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
   email TEXT NOT NULL UNIQUE,
   city TEXT,
   address TEXT,
+  restaurant_type TEXT,
   subscription_plan TEXT DEFAULT 'free_trial',
   status TEXT NOT NULL DEFAULT 'active',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -202,12 +203,13 @@ CREATE TRIGGER auto_calculate_bill BEFORE INSERT ON orders FOR EACH ROW EXECUTE 
 CREATE OR REPLACE FUNCTION restaurant_login(p_email TEXT, p_password_hash TEXT)
 RETURNS TABLE (
   id UUID, email TEXT, role TEXT, restaurant_id UUID, 
-  temp_password BOOLEAN, restaurant_name TEXT, restaurant_slug TEXT, restaurant_is_active BOOLEAN
+  temp_password BOOLEAN, restaurant_name TEXT, restaurant_slug TEXT, 
+  restaurant_type TEXT, restaurant_is_active BOOLEAN
 )
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   RETURN QUERY
-  SELECT u.id, u.email, u.role, u.restaurant_id, u.temp_password, r.name, r.slug, r.is_active
+  SELECT u.id, u.email, u.role, u.restaurant_id, u.temp_password, r.name, r.slug, r.restaurant_type, r.is_active
   FROM users u
   JOIN restaurants r ON r.id = u.restaurant_id
   WHERE LOWER(u.email) = LOWER(p_email) AND u.password_hash = p_password_hash;
@@ -233,6 +235,7 @@ CREATE OR REPLACE FUNCTION admin_create_restaurant(
   p_email TEXT,
   p_city TEXT,
   p_address TEXT,
+  p_restaurant_type TEXT,
   p_subscription_plan TEXT,
   p_password_hash TEXT,
   p_internal_notes TEXT
@@ -245,10 +248,10 @@ DECLARE
 BEGIN
   INSERT INTO restaurants (
     registration_request_id, name, slug, owner_name, phone, email,
-    city, address, subscription_plan, status, is_active
+    city, address, restaurant_type, subscription_plan, status, is_active
   ) VALUES (
     p_request_id, p_restaurant_name, p_slug, p_owner_name, p_phone, p_email,
-    p_city, p_address, p_subscription_plan, 'active', TRUE
+    p_city, p_address, p_restaurant_type, p_subscription_plan, 'active', TRUE
   )
   RETURNING id INTO v_restaurant_id;
 
@@ -295,3 +298,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE orders;
 INSERT INTO admin_users (email, password_hash, name, is_super_admin)
 VALUES ('admin@foodorder.com', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'System Admin', TRUE)
 ON CONFLICT (email) DO NOTHING;
+
+-- 10. STORAGE BUCKETS (Instructions & Policies)
+-- Note: Create these buckets in Supabase Dashboard: 'menu-items', 'restaurant-assets'
+
+-- Policy for 'menu-items' bucket (Public Read, Authenticated Upload)
+-- CREATE POLICY "Public Read Menu Items" ON storage.objects FOR SELECT USING (bucket_id = 'menu-items');
+-- CREATE POLICY "Authenticated Upload Menu Items" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'menu-items' AND auth.role() = 'authenticated');
+
+-- Policy for 'restaurant-assets' bucket (Public Read, Authenticated Upload)
+-- CREATE POLICY "Public Read Assets" ON storage.objects FOR SELECT USING (bucket_id = 'restaurant-assets');
+-- CREATE POLICY "Authenticated Upload Assets" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'restaurant-assets' AND auth.role() = 'authenticated');

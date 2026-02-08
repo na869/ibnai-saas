@@ -9,6 +9,7 @@ import {
   Loading,
   Alert,
   Textarea,
+  ImageUpload,
 } from "../../components/ui";
 import {
   subscribeToMenuItems,
@@ -76,21 +77,33 @@ const Menu: React.FC = () => {
     return <Loading text="Loading menu..." />;
   }
 
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const restaurantType = user?.restaurant?.type || "Restaurant";
+
+  const getCustomTitle = (type: string) => {
+    const typeLower = type.toLowerCase();
+    if (typeLower === "bakery") return "Bake Items Management";
+    if (typeLower === "cafe") return "Cafe Menu Management";
+    return "Menu Management";
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-text mb-2">Menu Management</h2>
+          <h2 className="text-2xl font-bold text-text mb-2">
+            {getCustomTitle(restaurantType)}
+          </h2>
           <p className="text-text-secondary">
-            Manage your menu items and availability
+            Manage your {restaurantType.toLowerCase()} items and availability
           </p>
         </div>
         <Button
           icon={<Plus className="w-5 h-5" />}
           onClick={() => setShowAddModal(true)}
         >
-          Add Item
+          {restaurantType === "Bakery" ? "Add Bake Item" : "Add Item"}
         </Button>
       </div>
 
@@ -311,6 +324,7 @@ const MenuItemModal: React.FC<MenuItemModalProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -489,13 +503,13 @@ const MenuItemModal: React.FC<MenuItemModalProps> = ({
           />
         </div>
 
-        <Input
-          label="Image URL (Optional)"
+        <ImageUpload
+          label="Item Image"
           value={formData.image_url}
-          onChange={(e) =>
-            setFormData({ ...formData, image_url: e.target.value })
-          }
-          placeholder="https://example.com/image.jpg"
+          onChange={(url) => setFormData({ ...formData, image_url: url })}
+          bucket="menu-items"
+          path={user.restaurant_id}
+          helperText="Upload a high-quality photo of your dish"
         />
 
         {/* Sizes */}
