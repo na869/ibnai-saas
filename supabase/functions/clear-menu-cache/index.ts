@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import Redis from "https://esm.sh/ioredis"
 
-const redis = new Redis(Deno.env.get("REDIS_URL") || "")
+const redis = new Redis(Deno.env.get("rediss://default:AcQ9AAIncDJkNTc0ODU4N2MwNWI0MDNkOTZhNTViMGIxYjA1NjRhM3AyNTAyMzc@moral-aphid-50237.upstash.io:6379") || "")
 
 serve(async (req: Request): Promise<Response> => {
   try {

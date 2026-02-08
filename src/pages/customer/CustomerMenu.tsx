@@ -2,7 +2,10 @@ import React, { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { useParams } from "react-router-dom";
 import { Search, Info, Package } from "lucide-react";
 import { Card, Loading } from "../../components/ui";
-import { subscribeToMenuData } from "../../services/restaurantService";
+import {
+  subscribeToMenuData,
+  getOptimizedMenu,
+} from "../../services/restaurantService";
 import type { MenuItem } from "../../config/supabase";
 import { supabase } from "../../config/supabase";
 
