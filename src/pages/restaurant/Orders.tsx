@@ -259,7 +259,7 @@ const Orders: React.FC = () => {
               <div className="mt-6 pt-4 border-t border-gray-50 space-y-3">
                 <div className="flex justify-between items-end mb-2">
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Amount</span>
-                  <span className="text-2xl font-black text-gray-900">₹{order.total}</span>
+                  <span className="text-2xl font-black text-gray-900">₹{Number(order.total).toFixed(2)}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -381,7 +381,7 @@ const BillModal: React.FC<{ isOpen: boolean; order: Order | null; restaurant: an
               <div key={idx} className="flex justify-between text-xs font-bold py-1">
                 <span className="w-1/2 uppercase">{item.name}</span>
                 <span className="w-1/6 text-center">{item.quantity}</span>
-                <span className="w-1/3 text-right">₹{item.item_total}</span>
+                <span className="w-1/3 text-right">₹{Number(item.item_total || 0).toFixed(2)}</span>
               </div>
             ))}
           </div>
@@ -390,15 +390,15 @@ const BillModal: React.FC<{ isOpen: boolean; order: Order | null; restaurant: an
           <div className="space-y-2">
             <div className="flex justify-between text-xs font-bold">
               <span>Subtotal</span>
-              <span>₹{order.subtotal}</span>
+              <span>₹{Number(order.subtotal).toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-xs font-bold">
               <span>GST (5%)</span>
-              <span>₹{order.tax}</span>
+              <span>₹{Number(order.tax).toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-lg font-black pt-4 border-t-2 border-double border-gray-900 mt-4">
               <span className="uppercase">Grand Total</span>
-              <span>₹{order.total}</span>
+              <span>₹{Number(order.total).toFixed(2)}</span>
             </div>
           </div>
 

@@ -14,6 +14,8 @@ import CartModal from "../../components/menu/modals/CartModal";
 import ItemCustomizationModal from "../../components/menu/modals/ItemCustomizationModal";
 import CheckoutModal from "../../components/menu/modals/CheckoutModal";
 
+import { APP_CONFIG } from "../../config/config";
+
 interface CartItem extends MenuItem {
   quantity: number;
   selectedSize?: { name: string; price: number };
@@ -112,19 +114,50 @@ const CustomerMenu: React.FC = () => {
   }, [menuItems, searchTerm, vegOnly, menuCategories]);
 
   const groupedItems = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase().trim();
     const filtered = menuItems.filter((item) => {
-      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = 
+        !searchLower ||
+        item.name.toLowerCase().includes(searchLower) ||
+        (item.description && item.description.toLowerCase().includes(searchLower));
+      
+      const categoryObj = menuCategories.find(c => c.id === item.category_id);
+      const matchesCategorySearch = searchLower && categoryObj?.name.toLowerCase().includes(searchLower);
+
       const matchesVeg = !vegOnly || isVegItem(item);
-      return matchesSearch && matchesVeg && item.is_available;
+      return (matchesSearch || matchesCategorySearch) && matchesVeg && item.is_available;
     });
     
     const groups: { [key: string]: { category: any, items: MenuItem[] } } = {};
     
+    // Sort items by display_order within categories
     const sortedFiltered = [...filtered].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
+    // Get default categories for this business type
+    const businessType = restaurant?.restaurant_type || "Other";
+    const defaultCats = APP_CONFIG.businessCategories[businessType as keyof typeof APP_CONFIG.businessCategories] || APP_CONFIG.businessCategories["Other"];
+
     sortedFiltered.forEach((item) => {
-      const categoryId = item.category_id || "others";
-      const categoryObj = menuCategories.find(c => c.id === categoryId) || { name: "Others", id: "others", display_order: 999 };
+      let categoryObj;
+      
+      if (item.category_id) {
+        categoryObj = menuCategories.find(c => c.id === item.category_id);
+      }
+      
+      // Fallback: If no category_id but has category name string
+      if (!categoryObj && item.category) {
+        // Try to find an existing category with the same name to avoid duplicates
+        categoryObj = menuCategories.find(c => c.name.toLowerCase() === item.category!.toLowerCase());
+        
+        if (!categoryObj) {
+          categoryObj = { id: item.category.toLowerCase().replace(/\s+/g, '-'), name: item.category, display_order: 50 };
+        }
+      }
+
+      // Default fallback
+      if (!categoryObj) {
+        categoryObj = { name: "Others", id: "others", display_order: 999 };
+      }
       
       if (!groups[categoryObj.id]) {
         groups[categoryObj.id] = { category: categoryObj, items: [] };
@@ -132,10 +165,26 @@ const CustomerMenu: React.FC = () => {
       groups[categoryObj.id].items.push(item);
     });
     
+    // Convert to array and sort
     return Object.values(groups)
       .filter(group => group.items.length > 0)
-      .sort((a, b) => (a.category.display_order || 0) - (b.category.display_order || 0));
-  }, [menuItems, searchTerm, vegOnly, menuCategories]);
+      .sort((a, b) => {
+        // First try to sort by explicit display_order
+        if (a.category.display_order !== b.category.display_order) {
+          return (a.category.display_order || 0) - (b.category.display_order || 0);
+        }
+        
+        // Then try to sort by appearance in businessCategories list
+        const indexA = defaultCats.indexOf(a.category.name);
+        const indexB = defaultCats.indexOf(b.category.name);
+        
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        
+        return a.category.name.localeCompare(b.category.name);
+      });
+  }, [menuItems, searchTerm, vegOnly, menuCategories, restaurant]);
 
   const addToCart = (
     item: MenuItem,

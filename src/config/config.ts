@@ -78,6 +78,18 @@ export const APP_CONFIG = {
     "Other",
   ],
 
+  // Default categories by business type
+  businessCategories: {
+    "Restaurant": ["Starters", "Main Course", "Biriyani", "Bread & Roti", "Non-Veg Curries", "Veg Curries", "Beverages", "Desserts"],
+    "Cafe": ["Hot Coffee", "Cold Coffee", "Tea & Beverages", "Sandwiches", "Pastries", "Quick Bites"],
+    "Bakery": ["Cakes", "Pastries", "Breads", "Cookies", "Savories", "Custom Cakes"],
+    "Cloud Kitchen": ["Combos", "Main Course", "Side Dishes", "Beverages"],
+    "Fine Dining": ["Appetizers", "Soups", "Salads", "Main Entrée", "Gourmet Sides", "Fine Wines & Drinks", "Artisan Desserts"],
+    "Quick Service": ["Burgers", "Pizzas", "Sides", "Combos", "Beverages"],
+    "Food Truck": ["Signature Dishes", "Street Food", "Drinks", "Specials"],
+    "Other": ["Starters", "Main Course", "Beverages", "Other"]
+  },
+
   // Order statuses
   orderStatuses: {
     pending: { label: "Pending", color: "warning" },

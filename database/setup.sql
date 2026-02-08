@@ -186,7 +186,7 @@ BEGIN
   -- Loop through items to calc sum
   FOR item IN SELECT * FROM jsonb_array_elements(NEW.items)
   LOOP
-    calc_subtotal := calc_subtotal + (COALESCE((item->>'price')::decimal, 0) * COALESCE((item->>'quantity')::int, 1));
+    calc_subtotal := calc_subtotal + (COALESCE((item->>'base_price')::decimal, 0) * COALESCE((item->>'quantity')::int, 1));
   END LOOP;
 
   NEW.subtotal := calc_subtotal;

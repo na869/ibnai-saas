@@ -66,7 +66,7 @@ const Reports: React.FC = () => {
 
       // Calculate metrics
       const totalRevenue =
-        orders?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
+        orders?.reduce((sum, order) => sum + Number(order.total || 0), 0) || 0;
       const totalOrders = orders?.length || 0;
       const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
@@ -97,7 +97,7 @@ const Reports: React.FC = () => {
         if (!dailyData[date]) {
           dailyData[date] = { revenue: 0, orders: 0 };
         }
-        dailyData[date].revenue += order.total_amount;
+        dailyData[date].revenue += Number(order.total || 0);
         dailyData[date].orders += 1;
       });
 
