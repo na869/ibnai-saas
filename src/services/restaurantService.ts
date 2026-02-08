@@ -82,6 +82,33 @@ export const updateOrderStatus = async (
   return !error;
 };
 
+// Helper to trigger cache invalidation (Calls a Supabase Edge Function or Backend Proxy)
+const invalidateCache = async (restaurantId: string) => {
+  try {
+    // This calls your hypothetical Redis invalidation endpoint
+    // In a real Supabase setup, a Database Webhook is better (see explanation below)
+    console.log(`🧹 Invalidating cache for restaurant: ${restaurantId}`);
+    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clear-menu-cache`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ restaurantId })
+    });
+  } catch (err) {
+    console.warn("Cache invalidation failed (Expected if function not yet deployed)");
+  }
+};
+
+// Optimized Menu Data Fetch (Single Query via SQL View)
+export const getOptimizedMenu = async (restaurantId: string) => {
+  const { data, error } = await supabase
+    .from("optimized_restaurant_menu")
+    .select("name, restaurant_type, categories")
+    .eq("restaurant_id", restaurantId)
+    .single();
+
+  return { data, error };
+};
+
 // Subscribe to menu data (categories + items) with real-time updates
 export const subscribeToMenuData = (
   restaurantId: string,
@@ -188,12 +215,15 @@ export const subscribeToMenuItems = (
 
 // Create menu item
 export const createMenuItem = async (item: Partial<MenuItem>) => {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("menu_items")
     .insert([item])
     .select()
     .single();
 
+  if (!error && item.restaurant_id) {
+    invalidateCache(item.restaurant_id);
+  }
   return !error;
 };
 
@@ -207,6 +237,9 @@ export const updateMenuItem = async (
     .update(updates)
     .eq("id", itemId);
 
+  if (!error && updates.restaurant_id) {
+    invalidateCache(updates.restaurant_id);
+  }
   return !error;
 };
 
@@ -215,18 +248,28 @@ export const toggleMenuItemAvailability = async (
   itemId: string,
   isAvailable: boolean
 ) => {
+  const { data: item } = await supabase.from("menu_items").select("restaurant_id").eq("id", itemId).single();
+  
   const { error } = await supabase
     .from("menu_items")
     .update({ is_available: isAvailable })
     .eq("id", itemId);
 
+  if (!error && item?.restaurant_id) {
+    invalidateCache(item.restaurant_id);
+  }
   return !error;
 };
 
 // Delete menu item
 export const deleteMenuItem = async (itemId: string) => {
+  const { data: item } = await supabase.from("menu_items").select("restaurant_id").eq("id", itemId).single();
+  
   const { error } = await supabase.from("menu_items").delete().eq("id", itemId);
 
+  if (!error && item?.restaurant_id) {
+    invalidateCache(item.restaurant_id);
+  }
   return !error;
 };
 

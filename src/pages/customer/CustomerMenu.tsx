@@ -66,6 +66,25 @@ const CustomerMenu: React.FC = () => {
 
   useEffect(() => {
     if (restaurant?.id) {
+      // 1. FAST INITIAL LOAD: Get pre-aggregated data from our SQL View
+      const fetchInitialData = async () => {
+        const { data, error } = await getOptimizedMenu(restaurant.id);
+        if (!error && data) {
+          // Flatten the items for our existing logic
+          const allItems: MenuItem[] = [];
+          data.categories?.forEach((cat: any) => {
+            if (cat.items) allItems.push(...cat.items);
+          });
+          
+          setMenuCategories(data.categories || []);
+          setMenuItems(allItems);
+          setLoading(false);
+        }
+      };
+      
+      fetchInitialData();
+
+      // 2. REAL-TIME UPDATES: Still listen to individual tables for changes
       const subscription = subscribeToMenuData(restaurant.id, (data) => {
         setMenuCategories(data.categories);
         setMenuItems(data.items);
