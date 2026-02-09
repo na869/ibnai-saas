@@ -32,69 +32,73 @@ const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      // Use RPC function for restaurant login (bypasses RLS issues)
-      const passwordHash = await hashPassword(formData.password);
-      console.log(
-        "Attempting login with:",
-        formData.email,
-        "hash:",
-        passwordHash.substring(0, 10) + "..."
-      );
+      // Use Supabase Auth for login
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email.toLowerCase(),
+        password: formData.password,
+      });
 
-      const { data: loginData, error: loginError } = await supabase.rpc(
-        "restaurant_login",
-        {
-          p_email: formData.email.toLowerCase(),
-          p_password_hash: passwordHash,
+      if (authError) {
+        console.error("Auth error:", authError);
+        
+        // Handle specific errors
+        if (authError.message === "Invalid login credentials") {
+          // Check if registration is still pending
+          const { data: registrationData } = await supabase
+            .from("registration_requests")
+            .select("status")
+            .eq("email", formData.email.toLowerCase())
+            .single();
+
+          if (registrationData && registrationData.status === "pending") {
+            setError("pending");
+          } else {
+            setError("Invalid email or password");
+          }
+        } else {
+          setError(authError.message);
         }
-      );
-
-      console.log("Login response:", { data: loginData, error: loginError });
-
-      if (loginError) {
-        console.error("Login RPC error:", loginError);
-        // Show detailed error message
-        setError(
-          `Login failed: ${
-            loginError.message ||
-            "Please ensure the restaurant_login function exists in your database"
-          }`
-        );
         setLoading(false);
         return;
       }
 
-      if (!loginData || loginData.length === 0) {
-        // Check if registration is still pending
-        const { data: registrationData } = await supabase
-          .from("registration_requests")
-          .select("status")
-          .eq("email", formData.email.toLowerCase())
-          .single();
-
-        if (registrationData && registrationData.status === "pending") {
-          setError("pending");
-          setLoading(false);
-          return;
-        }
-
-        setError("Invalid email or password");
+      if (!authData.user) {
+        setError("Login failed. Please try again.");
         setLoading(false);
         return;
       }
 
-      const userData = loginData[0];
+      // Fetch additional user and restaurant data from public tables
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select(`
+          id, email, role, restaurant_id, temp_password,
+          restaurants (
+            name, slug, restaurant_type, is_active
+          )
+        `)
+        .eq("id", authData.user.id)
+        .single();
+
+      if (userError || !userData) {
+        console.error("User data fetch error:", userError);
+        setError("Failed to load user profile. Please contact support.");
+        setLoading(false);
+        return;
+      }
+
+      const restaurant = userData.restaurants as any;
 
       // Check if restaurant is active
-      if (!userData.restaurant_is_active) {
-        setError(
-          "Your restaurant account has been deactivated. Please contact support."
-        );
+      if (!restaurant?.is_active) {
+        setError("Your restaurant account has been deactivated. Please contact support.");
+        await supabase.auth.signOut();
         setLoading(false);
         return;
       }
 
-      // Login successful - store user data in localStorage
+      // Store essential user data in localStorage for UI convenience
+      // (Security is now handled by Supabase Auth session)
       localStorage.setItem(
         "user",
         JSON.stringify({
@@ -103,10 +107,10 @@ const LoginPage: React.FC = () => {
           role: userData.role,
           restaurant_id: userData.restaurant_id,
           restaurant: {
-            name: userData.restaurant_name,
-            slug: userData.restaurant_slug,
-            type: userData.restaurant_type,
-            is_active: userData.restaurant_is_active,
+            name: restaurant.name,
+            slug: restaurant.slug,
+            type: restaurant.restaurant_type,
+            is_active: restaurant.is_active,
           },
           temp_password: userData.temp_password,
         })
@@ -204,9 +208,9 @@ const LoginPage: React.FC = () => {
                 <input type="checkbox" className="mr-2 rounded border-border" />
                 Remember me
               </label>
-              <a href="#" className="text-accent hover:underline">
+              <Link to="/forgot-password" title="Forgot password?" className="text-accent hover:underline">
                 Forgot password?
-              </a>
+              </Link>
             </div>
 
             <Button type="submit" loading={loading} fullWidth size="lg">

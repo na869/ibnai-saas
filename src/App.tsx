@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/public/LandingPage";
 import RegisterPage from "./pages/public/RegisterPage";
 import LoginPage from "./pages/public/LoginPage";
+import ForgotPassword from "./pages/public/ForgotPassword";
 
 // Restaurant dashboard
 import RestaurantDashboard from "./pages/restaurant/Dashboard";
@@ -30,6 +31,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Restaurant Dashboard Routes */}
         <Route path="/restaurant/*" element={<RestaurantDashboard />} />

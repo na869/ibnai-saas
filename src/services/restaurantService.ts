@@ -87,7 +87,6 @@ const invalidateCache = async (restaurantId: string) => {
   try {
     // This calls your hypothetical Redis invalidation endpoint
     // In a real Supabase setup, a Database Webhook is better (see explanation below)
-    console.log(`🧹 Invalidating cache for restaurant: ${restaurantId}`);
     await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clear-menu-cache`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

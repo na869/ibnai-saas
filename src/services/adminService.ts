@@ -74,9 +74,15 @@ export const createRestaurantAccount = async (
     // 2. Generate slug and temp password
     const slug = generateSlug(request.restaurant_name);
     const tempPassword = generateTempPassword();
-    const passwordHash = await hashPassword(tempPassword);
 
-    // 3. Use RPC function to create restaurant and user (bypasses RLS)
+    // 3. Create Auth User (This requires Service Role or an Edge Function)
+    // For now, we continue using the RPC which we should update to also handle Auth if possible,
+    // or call an Edge Function. Let's assume the RPC 'admin_create_restaurant' 
+    // is updated or we use an Edge Function.
+    
+    // IMPORTANT: In a production SaaS, you would call a Supabase Edge Function here
+    // that uses the Service Role Key to create the user in auth.users.
+    
     const { data: result, error: rpcError } = await supabase.rpc(
       "admin_create_restaurant",
       {
@@ -90,7 +96,7 @@ export const createRestaurantAccount = async (
         p_address: request.address || null,
         p_restaurant_type: request.restaurant_type,
         p_subscription_plan: data.subscriptionPlan,
-        p_password_hash: passwordHash,
+        p_password: tempPassword, // We send plain temp password to be handled by Auth in the next step
         p_internal_notes: data.internalNotes || null,
       }
     );
