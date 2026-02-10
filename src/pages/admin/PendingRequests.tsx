@@ -352,7 +352,6 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           placeholder="owner@restaurant.com"
           required
-          helperText="This will be used for login"
         />
 
         <Select
