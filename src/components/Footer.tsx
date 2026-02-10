@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Store, Mail, Phone, MapPin, Globe, Linkedin, Twitter, Instagram } from "lucide-react";
+import logo from "../assets/ibnai-dineos-logo.png";
 
 const Footer: React.FC = () => {
   return (
@@ -12,9 +13,14 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-24">
           {/* Brand Column */}
           <div className="lg:col-span-1 space-y-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/20">
-                <Store className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-4">
+              <div className="relative flex items-center justify-center">
+                <div className="absolute inset-0 bg-emerald-500/10 blur-lg rounded-full"></div>
+                <img 
+                  src={logo} 
+                  alt="IBNai DineOS" 
+                  className="h-14 w-auto mix-blend-screen drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]"
+                />
               </div>
               <div className="flex flex-col md:flex-row md:items-baseline md:gap-2">
                 <span className="text-[10px] uppercase tracking-[0.4em] text-emerald-500 font-black">IBNai</span>

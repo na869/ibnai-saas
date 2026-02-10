@@ -13,37 +13,12 @@ import {
 } from "lucide-react";
 import { Button } from "../components/ui";
 import Footer from "../components/Footer";
+import Navbar from "../components/Navbar";
 
 const Home: React.FC = () => {
   return (
     <div className="min-h-screen bg-white font-sans selection:bg-emerald-100">
-      {/* Premium Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/20">
-              <Store className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex flex-col md:flex-row md:items-baseline md:gap-2">
-              <span className="text-[10px] uppercase tracking-[0.4em] text-emerald-500 font-black">IBNai</span>
-              <span className="text-2xl font-black text-white tracking-tighter">DineOS</span>
-            </div>
-          </div>
-          
-          <div className="hidden md:flex items-center gap-10">
-            <a href="#features" className="text-sm font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Features</a>
-            <a href="#pricing" className="text-sm font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Pricing</a>
-            <Link to="/login">
-              <Button variant="ghost" className="text-white font-black uppercase tracking-widest text-xs">Log In</Button>
-            </Link>
-            <Link to="/register">
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 h-12 rounded-xl font-black uppercase tracking-widest text-xs shadow-xl shadow-emerald-600/20">
-                Launch My DineOS Free
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero Section - The Greedy Sales Proposition */}
       <section className="pt-48 pb-32 px-6 bg-slate-900 relative overflow-hidden">
