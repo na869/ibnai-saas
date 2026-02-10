@@ -1,4 +1,4 @@
-# FoodOrder - Multi-Tenant Restaurant Ordering SaaS Platform
+# IBNai DineOS - Multi-Tenant Restaurant Operating System
 
 A complete, production-ready restaurant ordering platform with QR code ordering, real-time updates, and multi-tenant support.
 
@@ -166,7 +166,7 @@ CREATE POLICY "Allow public read on orders" ON orders FOR SELECT USING (true);
 -- Create a default admin user (password: admin123)
 -- Password hash for 'admin123' using SHA-256
 INSERT INTO admin_users (email, password_hash, name)
-VALUES ('admin@foodorder.com', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'Super Admin');
+VALUES ('admin@dineos.com', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'Super Admin');
 ```
 
 4. Go to **Settings > API** and copy:
@@ -194,7 +194,7 @@ Visit: http://localhost:5173
 ### Admin Panel
 
 - URL: http://localhost:5173/admin/login
-- Email: admin@foodorder.com
+- Email: admin@dineos.com
 - Password: admin123
 
 ### Demo Restaurant

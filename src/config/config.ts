@@ -9,46 +9,36 @@ export const SUPABASE_ANON_KEY =
 
 // Application Configuration
 export const APP_CONFIG = {
-  appName: "FoodOrder",
+  appName: "IBNai DineOS",
   defaultCurrency: "₹",
   taxRate: 0.05, // 5% GST
   orderPrefix: "ORD",
 
   // Subscription plans
   plans: {
-    free_trial: {
-      name: "Free Trial",
-      price: 0,
-      duration: "14 days",
-      features: [
-        "Up to 50 orders/month",
-        "Basic menu management",
-        "QR ordering",
-        "Email support",
-      ],
-    },
     starter: {
       name: "Starter",
-      price: 299,
+      price: 0,
       duration: "per month",
       features: [
-        "Unlimited orders",
-        "Full menu management",
-        "QR ordering",
-        "Reports",
-        "WhatsApp support",
+        "Free for first 50 Restaurants",
+        "Unlimited QR orders",
+        "Basic menu management",
+        "Digital menu hosting",
+        "Email support",
       ],
     },
     pro: {
       name: "Pro",
-      price: 599,
+      price: 499,
       duration: "per month",
       features: [
-        "Everything in Starter",
-        "Multiple locations",
+        "Complete Control",
+        "Unlimited locations",
         "Advanced analytics",
         "Custom branding",
         "Priority support",
+        "Inventory management",
       ],
     },
   },

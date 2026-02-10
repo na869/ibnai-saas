@@ -1,75 +1,93 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Store, Phone, Mail, ShieldCheck, TrendingUp } from 'lucide-react';
+import React from "react";
+import { Link } from "react-router-dom";
+import { Store, Mail, Phone, MapPin, Globe, Linkedin, Twitter, Instagram } from "lucide-react";
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-slate-900 text-white/40 py-24 border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex flex-col md:flex-row justify-between items-start gap-16 mb-24">
-          {/* Brand & Value Prop */}
-          <div className="max-w-xs">
-            <div className="flex items-center space-x-2 mb-8 text-white">
-              <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center">
-                <Store className="w-6 h-6" />
+    <footer className="bg-slate-900 text-white pt-32 pb-16 px-6 relative overflow-hidden">
+      {/* Visual Identity Watermark */}
+      <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-emerald-600/5 blur-[120px] pointer-events-none"></div>
+      
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-24">
+          {/* Brand Column */}
+          <div className="lg:col-span-1 space-y-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/20">
+                <Store className="w-6 h-6 text-white" />
               </div>
-              <span className="text-3xl font-black tracking-tighter italic">IBNai</span>
+              <div className="flex flex-col md:flex-row md:items-baseline md:gap-2">
+                <span className="text-[10px] uppercase tracking-[0.4em] text-emerald-500 font-black">IBNai</span>
+                <span className="text-2xl font-black text-white tracking-tighter">DineOS</span>
+              </div>
             </div>
-            <p className="font-bold leading-relaxed text-slate-400 mb-8 text-lg">
-              The #1 Commission-Free Ordering Platform for India's smartest restaurant owners.
+            <p className="text-slate-400 font-medium leading-relaxed text-lg italic">
+              Serve Smart. Built by IBNai: Architects of Intelligence.
             </p>
-            <div className="flex items-center space-x-2 text-emerald-500 font-black text-sm uppercase tracking-widest">
-              <ShieldCheck className="w-5 h-5" />
-              <span>Certified Digital Security</span>
+            <div className="flex gap-4">
+              {[Linkedin, Twitter, Instagram].map((Icon, i) => (
+                <a key={i} href="#" className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:border-emerald-500/50 transition-all">
+                  <Icon className="w-5 h-5" />
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Contact & Support */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-16 w-full lg:w-2/3">
-            <div>
-              <h4 className="text-white font-black uppercase tracking-[0.2em] text-xs mb-8">Business Support</h4>
-              <ul className="space-y-6 font-bold text-sm uppercase tracking-widest">
-                <li>
-                  <span className="block text-[10px] text-slate-500 mb-1">24/7 Owner Hotline</span>
-                  <a href="tel:+919390949028" className="text-white text-xl hover:text-emerald-500 transition-colors font-black">+91 93909 49028</a>
-                </li>
-                <li>
-                  <span className="block text-[10px] text-slate-500 mb-1">General Inquiries</span>
-                  <a href="mailto:naseershaik@gmail.com" className="text-white hover:text-emerald-500 transition-colors lowercase font-bold break-all">naseershaik@gmail.com</a>
-                </li>
-              </ul>
-            </div>
+          {/* Product Links */}
+          <div className="space-y-8">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Infrastructure</h4>
+            <ul className="space-y-4">
+              <li><Link to="/register" className="text-slate-400 font-bold hover:text-white transition-colors">Start Free Trial</Link></li>
+              <li><Link to="/login" className="text-slate-400 font-bold hover:text-white transition-colors">Partner Dashboard</Link></li>
+              <li><a href="#features" className="text-slate-400 font-bold hover:text-white transition-colors">DineOS Core</a></li>
+              <li><a href="#pricing" className="text-slate-400 font-bold hover:text-white transition-colors">Pricing Structure</a></li>
+            </ul>
+          </div>
 
-            <div>
-              <h4 className="text-white font-black uppercase tracking-[0.2em] text-xs mb-8">Product</h4>
-              <ul className="space-y-6 font-bold text-sm uppercase tracking-widest">
-                <li><a href="#features" className="hover:text-emerald-500 transition-colors">How it Works</a></li>
-                <li><a href="#pricing" className="hover:text-emerald-500 transition-colors">Pricing Plans</a></li>
-                <li><Link to="/register" className="hover:text-emerald-500 transition-colors text-emerald-500">Claim Free Spot</Link></li>
-              </ul>
-            </div>
+          {/* Legal Links */}
+          <div className="space-y-8">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Legal Compliance</h4>
+            <ul className="space-y-4">
+              <li><Link to="/privacy" className="text-slate-400 font-bold hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="text-slate-400 font-bold hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><a href="#" className="text-slate-400 font-bold hover:text-white transition-colors">Cookie Architecture</a></li>
+              <li><a href="#" className="text-slate-400 font-bold hover:text-white transition-colors">Security Audit</a></li>
+            </ul>
+          </div>
 
-            <div>
-              <h4 className="text-white font-black uppercase tracking-[0.2em] text-xs mb-8">Trust & Legal</h4>
-              <ul className="space-y-6 font-bold text-sm uppercase tracking-widest">
-                <li><Link to="/privacy" className="hover:text-emerald-500 transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/terms" className="hover:text-emerald-500 transition-colors">Terms of Use</Link></li>
-                <li className="flex items-center gap-2 text-emerald-500/50 italic">
-                  <TrendingUp className="w-4 h-4" /> Built for Profit
-                </li>
-              </ul>
+          {/* Contact Column */}
+          <div className="space-y-8">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Communications</h4>
+            <div className="space-y-6">
+              <a href="tel:+919390949028" className="flex items-center gap-4 group">
+                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Global Support</p>
+                  <p className="text-white font-black">+91 93909 49028</p>
+                </div>
+              </a>
+              <a href="mailto:naseershaik@gmail.com" className="flex items-center gap-4 group">
+                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Official Inquiry</p>
+                  <p className="text-white font-black">naseershaik@gmail.com</p>
+                </div>
+              </a>
             </div>
           </div>
         </div>
 
-        <div className="pt-12 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-8">
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-600">
-            © 2026 IBNai Digital Systems. All rights reserved.
+        <div className="pt-16 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-8">
+          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-600">
+            © 2026 IBNai Digital Systems. All Systems Operational.
           </p>
-          <div className="flex gap-8">
-             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-700">
-               <span className="w-2 h-2 rounded-full bg-emerald-500"></span> System Status: 100% Online
-             </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Series-A Verified Node</span>
           </div>
         </div>
       </div>
