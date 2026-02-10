@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { X } from "lucide-react";
 
 interface ModalProps {
@@ -18,39 +18,52 @@ export const Modal: React.FC<ModalProps> = ({
   size = "md",
   showCloseButton = true,
 }) => {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const sizes = {
     sm: "max-w-md",
-    md: "max-w-lg",
-    lg: "max-w-2xl",
-    xl: "max-w-4xl",
+    md: "max-w-xl",
+    lg: "max-w-3xl",
+    xl: "max-w-5xl",
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-[100] overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 transition-opacity"
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className={`relative w-full ${sizes[size]} bg-white rounded-lg shadow-xl transform transition-all`}
+          className={`relative w-full ${sizes[size]} bg-white rounded-[40px] shadow-2xl transform transition-all animate-in zoom-in-95 duration-300 overflow-hidden border border-slate-100`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className="flex items-center justify-between p-6 border-b border-border">
+            <div className="flex items-center justify-between px-10 py-8 border-b border-slate-50 bg-slate-50/50">
               {title && (
-                <h2 className="text-xl font-bold text-text">{title}</h2>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tighter italic">
+                  {title}
+                </h2>
               )}
               {showCloseButton && (
                 <button
                   onClick={onClose}
-                  className="text-text-secondary hover:text-text transition-colors"
+                  className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all shadow-sm hover:shadow-md active:scale-95"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -59,7 +72,7 @@ export const Modal: React.FC<ModalProps> = ({
           )}
 
           {/* Content */}
-          <div className="p-6">{children}</div>
+          <div className="p-6 md:p-10">{children}</div>
         </div>
       </div>
     </div>

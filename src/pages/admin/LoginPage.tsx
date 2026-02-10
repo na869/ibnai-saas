@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, ArrowLeft, Mail, Lock } from "lucide-react";
+import { Shield, ArrowLeft, Mail, Lock, Zap } from "lucide-react";
 import { Button, Input, Alert, Card } from "../../components/ui";
 import { supabase } from "../../config/supabase";
 import { isValidEmail, hashPassword } from "../../utils/helpers";
@@ -19,19 +19,18 @@ const AdminLogin: React.FC = () => {
     setError("");
 
     if (!formData.email || !formData.password) {
-      setError("Please enter both email and password");
+      setError("Credentials required for authentication.");
       return;
     }
 
     if (!isValidEmail(formData.email)) {
-      setError("Please enter a valid email address");
+      setError("Please provide a valid corporate email.");
       return;
     }
 
     setLoading(true);
 
     try {
-      // Hash password and use RPC function for admin login
       const passwordHash = await hashPassword(formData.password);
       const { data: adminData, error: adminError } = await supabase.rpc(
         "admin_login",
@@ -41,104 +40,81 @@ const AdminLogin: React.FC = () => {
         }
       );
 
-      if (adminError) {
-        console.error("Admin login RPC error:", adminError);
-        setError("Invalid email or password");
-        setLoading(false);
-        return;
-      }
-
-      if (!adminData || adminData.length === 0) {
-        setError("Invalid email or password");
+      if (adminError || !adminData || adminData.length === 0) {
+        setError("Unauthorized. Access denied.");
         setLoading(false);
         return;
       }
 
       const admin = adminData[0];
-
-      // Login successful - store admin data
-      localStorage.setItem(
-        "admin",
-        JSON.stringify({
-          id: admin.id,
-          email: admin.email,
-          name: admin.name,
-        })
-      );
-
-      // Redirect to admin dashboard
+      localStorage.setItem("admin", JSON.stringify({ id: admin.id, email: admin.email, name: admin.name }));
       navigate("/admin");
     } catch (err: any) {
-      console.error("Admin login error:", err);
-      setError("An error occurred. Please try again.");
+      setError("System encryption error. Try again later.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setError("");
-  };
-
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        {/* Back to Home */}
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center px-6 relative overflow-hidden font-sans">
+      <div className="absolute top-0 right-0 w-1/3 h-full bg-emerald-600/5 blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-1/3 h-full bg-indigo-600/5 blur-[120px] pointer-events-none"></div>
+
+      <div className="w-full max-w-lg relative z-10">
         <Link
           to="/"
-          className="inline-flex items-center text-text-secondary hover:text-text mb-8"
+          className="inline-flex items-center text-slate-500 hover:text-white mb-12 font-black uppercase tracking-[0.2em] text-[10px] transition-colors"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
+          <ArrowLeft className="w-4 h-4 mr-3" />
+          Return to Terminal
         </Link>
 
-        {/* Login Card */}
-        <Card>
-          {/* Logo and Title */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/5 mb-4">
-              <Shield className="w-10 h-10 text-accent" />
+        <Card className="border-none shadow-2xl shadow-black/50 p-10 md:p-16 rounded-[48px] bg-white">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-[28px] bg-slate-900 mb-8 shadow-xl shadow-slate-900/20">
+              <Shield className="w-10 h-10 text-emerald-500" />
             </div>
-            <h1 className="text-2xl font-bold text-text mb-2">Admin Login</h1>
-            <p className="text-text-secondary">Access the admin panel</p>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic mb-3">Admin Infrastructure</h1>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+               <Zap className="w-3 h-3 text-emerald-500" /> Secure Encryption Active
+            </p>
           </div>
 
-          {/* Error Alert */}
-          {error && <Alert type="error" message={error} className="mb-6" />}
+          {error && <Alert type="error" message={error} className="mb-10" />}
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-8">
             <Input
-              label="Email Address"
+              label="Admin ID (Email)"
               name="email"
               type="email"
               value={formData.email}
-              onChange={handleChange}
-              placeholder="admin@example.com"
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              placeholder="root@ibnai.com"
               icon={<Mail className="w-5 h-5" />}
               required
-              autoComplete="email"
             />
 
             <Input
-              label="Password"
+              label="Security Key (Password)"
               name="password"
               type="password"
               value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
+              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+              placeholder="••••••••"
               icon={<Lock className="w-5 h-5" />}
               required
-              autoComplete="current-password"
             />
 
-            <Button type="submit" loading={loading} fullWidth size="lg">
-              Login as Admin
+            <Button type="submit" loading={loading} fullWidth size="lg" className="h-20 rounded-3xl font-black uppercase tracking-widest text-sm shadow-2xl shadow-emerald-600/20 mt-4">
+              Authorize Access
             </Button>
           </form>
         </Card>
+        
+        <p className="mt-12 text-center text-[10px] font-black uppercase tracking-[0.4em] text-slate-600">
+           Digital Defense Systems v2.4.0
+        </p>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import { useParams } from "react-router-dom";
-import { Search, Info, Package } from "lucide-react";
-import { Card, Loading } from "../../components/ui";
+import { useParams, useNavigate } from "react-router-dom";
+import { Search, Info, Package, ChevronRight, Star, Clock, ShieldCheck, ShoppingBag, ArrowLeft } from "lucide-react";
+import { Loading, Badge, Button } from "../../components/ui";
 import {
   subscribeToMenuData,
   getOptimizedMenu,
@@ -9,7 +9,7 @@ import {
 import type { MenuItem } from "../../config/supabase";
 import { supabase } from "../../config/supabase";
 
-// Sub-components
+// Sub-components (These will also be updated in subsequent steps)
 import MenuItemCard from "../../components/menu/MenuItemCard";
 import CategoryNav from "../../components/menu/CategoryNav";
 import CartBar from "../../components/menu/CartBar";
@@ -28,6 +28,7 @@ interface CartItem extends MenuItem {
 
 const CustomerMenu: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [restaurant, setRestaurant] = useState<any>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [menuCategories, setMenuCategories] = useState<any[]>([]);
@@ -55,7 +56,6 @@ const CustomerMenu: React.FC = () => {
       .single();
 
     if (error || !data) {
-      console.error("Restaurant not found");
       setLoading(false);
       return;
     }
@@ -69,11 +69,9 @@ const CustomerMenu: React.FC = () => {
 
   useEffect(() => {
     if (restaurant?.id) {
-      // 1. FAST INITIAL LOAD: Get pre-aggregated data from our SQL View
       const fetchInitialData = async () => {
         const { data, error } = await getOptimizedMenu(restaurant.id);
         if (!error && data) {
-          // Flatten the items for our existing logic
           const allItems: MenuItem[] = [];
           data.categories?.forEach((cat: any) => {
             if (cat.items) allItems.push(...cat.items);
@@ -87,7 +85,6 @@ const CustomerMenu: React.FC = () => {
       
       fetchInitialData();
 
-      // 2. REAL-TIME UPDATES: Still listen to individual tables for changes
       const subscription = subscribeToMenuData(restaurant.id, (data) => {
         setMenuCategories(data.categories);
         setMenuItems(data.items);
@@ -151,89 +148,42 @@ const CustomerMenu: React.FC = () => {
     });
     
     const groups: { [key: string]: { category: any, items: MenuItem[] } } = {};
-    
-    // Sort items by display_order within categories
     const sortedFiltered = [...filtered].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
-
-    // Get default categories for this business type
     const businessType = restaurant?.restaurant_type || "Other";
     const defaultCats = APP_CONFIG.businessCategories[businessType as keyof typeof APP_CONFIG.businessCategories] || APP_CONFIG.businessCategories["Other"];
 
     sortedFiltered.forEach((item) => {
-      let categoryObj;
-      
-      if (item.category_id) {
-        categoryObj = menuCategories.find(c => c.id === item.category_id);
-      }
-      
-      // Fallback: If no category_id but has category name string
+      let categoryObj = item.category_id ? menuCategories.find(c => c.id === item.category_id) : null;
       if (!categoryObj && item.category) {
-        // Try to find an existing category with the same name to avoid duplicates
         categoryObj = menuCategories.find(c => c.name.toLowerCase() === item.category!.toLowerCase());
-        
-        if (!categoryObj) {
-          categoryObj = { id: item.category.toLowerCase().replace(/\s+/g, '-'), name: item.category, display_order: 50 };
-        }
+        if (!categoryObj) categoryObj = { id: item.category.toLowerCase().replace(/\s+/g, '-'), name: item.category, display_order: 50 };
       }
-
-      // Default fallback
-      if (!categoryObj) {
-        categoryObj = { name: "Others", id: "others", display_order: 999 };
-      }
+      if (!categoryObj) categoryObj = { name: "Others", id: "others", display_order: 999 };
       
-      if (!groups[categoryObj.id]) {
-        groups[categoryObj.id] = { category: categoryObj, items: [] };
-      }
+      if (!groups[categoryObj.id]) groups[categoryObj.id] = { category: categoryObj, items: [] };
       groups[categoryObj.id].items.push(item);
     });
     
-    // Convert to array and sort
     return Object.values(groups)
       .filter(group => group.items.length > 0)
       .sort((a, b) => {
-        // First try to sort by explicit display_order
-        if (a.category.display_order !== b.category.display_order) {
-          return (a.category.display_order || 0) - (b.category.display_order || 0);
-        }
-        
-        // Then try to sort by appearance in businessCategories list
+        if (a.category.display_order !== b.category.display_order) return (a.category.display_order || 0) - (b.category.display_order || 0);
         const indexA = defaultCats.indexOf(a.category.name);
         const indexB = defaultCats.indexOf(b.category.name);
-        
         if (indexA !== -1 && indexB !== -1) return indexA - indexB;
         if (indexA !== -1) return -1;
         if (indexB !== -1) return 1;
-        
         return a.category.name.localeCompare(b.category.name);
       });
   }, [menuItems, searchTerm, vegOnly, menuCategories, restaurant]);
 
-  const addToCart = (
-    item: MenuItem,
-    selectedSize?: any,
-    selectedAddons: any[] = []
-  ) => {
+  const addToCart = (item: MenuItem, selectedSize?: any, selectedAddons: any[] = []) => {
     const basePrice = selectedSize ? selectedSize.price : item.base_price;
-    const addonsTotal = selectedAddons.reduce(
-      (sum, addon) => sum + addon.price,
-      0
-    );
+    const addonsTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
     const itemTotal = basePrice + addonsTotal;
 
-    const cartItem: CartItem = {
-      ...item,
-      quantity: 1,
-      selectedSize,
-      selectedAddons,
-      itemTotal,
-    };
-
-    const existingIndex = cart.findIndex(
-      (ci) =>
-        ci.id === item.id &&
-        ci.selectedSize?.name === selectedSize?.name &&
-        JSON.stringify(ci.selectedAddons) === JSON.stringify(selectedAddons)
-    );
+    const cartItem: CartItem = { ...item, quantity: 1, selectedSize, selectedAddons, itemTotal };
+    const existingIndex = cart.findIndex(ci => ci.id === item.id && ci.selectedSize?.name === selectedSize?.name && JSON.stringify(ci.selectedAddons) === JSON.stringify(selectedAddons));
 
     if (existingIndex >= 0) {
       const newCart = [...cart];
@@ -242,16 +192,13 @@ const CustomerMenu: React.FC = () => {
     } else {
       setCart([...cart, cartItem]);
     }
-
     setShowItemModal(false);
   };
 
   const updateQuantity = (index: number, delta: number) => {
     const newCart = [...cart];
     newCart[index].quantity += delta;
-    if (newCart[index].quantity <= 0) {
-      newCart.splice(index, 1);
-    }
+    if (newCart[index].quantity <= 0) newCart.splice(index, 1);
     setCart(newCart);
   };
 
@@ -267,125 +214,117 @@ const CustomerMenu: React.FC = () => {
     }
   };
 
-  const getItemQuantity = (itemId: string) => {
-    return cart.reduce((sum, cartItem) => {
-      if (cartItem.id === itemId) {
-        return sum + cartItem.quantity;
-      }
-      return sum;
-    }, 0);
-  };
+  const getItemQuantity = (itemId: string) => cart.reduce((sum, cartItem) => cartItem.id === itemId ? sum + cartItem.quantity : sum, 0);
 
   const handleRemoveItem = (itemId: string) => {
     const index = cart.findIndex((ci) => ci.id === itemId);
-    if (index >= 0) {
-      updateQuantity(index, -1);
-    }
+    if (index >= 0) updateQuantity(index, -1);
   };
 
   const scrollToCategory = (categoryId: string) => {
     const element = document.getElementById(categoryId);
     if (element) {
-      const offset = 140; 
+      const offset = 160; 
       const bodyRect = document.body.getBoundingClientRect().top;
       const elementRect = element.getBoundingClientRect().top;
       const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
+      window.scrollTo({ top: elementPosition - offset, behavior: "smooth" });
       setActiveCategory(categoryId);
     }
   };
 
-  const getCustomLabel = (type: string, defaultLabel: string) => {
-    const typeLower = type?.toLowerCase();
-    if (typeLower === 'bakery') {
-      if (defaultLabel === 'Search for dishes...') return 'Search for bakes...';
-      if (defaultLabel === 'Order Summary') return 'Basket Summary';
-    }
-    if (typeLower === 'cafe') {
-      if (defaultLabel === 'Search for dishes...') return 'Search for brews...';
-    }
-    return defaultLabel;
-  };
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <Loading text="Waking up the kitchen..." />
+    </div>
+  );
 
-  if (loading) {
-    return <Loading text={
-      restaurant?.restaurant_type?.toLowerCase() === 'bakery' 
-        ? "Warming up the oven..." 
-        : restaurant?.restaurant_type?.toLowerCase() === 'cafe'
-        ? "Brewing your experience..."
-        : "Fetching the best flavors..."
-    } />;
-  }
-
-  if (!restaurant) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="text-center p-8 max-w-md w-full">
-          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {restaurant?.restaurant_type === 'Cloud Kitchen' ? 'Kitchen Offline' : 'Restaurant Unavailable'}
-          </h2>
-          <p className="text-gray-500">
-            {restaurant?.restaurant_type === 'Cloud Kitchen' 
-              ? 'Our kitchen is currently not taking orders.' 
-              : 'The restaurant is not taking orders at the moment.'}
-          </p>
-        </Card>
+  if (!restaurant) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
+      <div className="text-center space-y-6 max-w-sm">
+        <div className="w-20 h-20 bg-white rounded-[32px] shadow-xl mx-auto flex items-center justify-center">
+           <Package className="w-10 h-10 text-slate-200" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Kitchen Currently Offline</h2>
+        <p className="text-slate-500 font-medium">This restaurant is not accepting orders at the moment. Please check back later.</p>
+        <Button fullWidth onClick={() => window.location.reload()}>Refresh Page</Button>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-white pb-32 font-sans selection:bg-orange-100 selection:text-orange-900">
-      {/* Hero Header */}
-      <div className="relative h-48 sm:h-56 overflow-hidden">
+    <div className="min-h-screen bg-white pb-40 font-sans selection:bg-emerald-100">
+      {/* Premium Hero Header */}
+      <div className="relative h-64 md:h-80 overflow-hidden">
+        {/* Floating Back Button for PWA */}
+        <button 
+          onClick={() => navigate(-1)}
+          className="absolute top-6 left-6 z-50 w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white border border-white/20 hover:bg-white hover:text-slate-900 transition-all shadow-xl active:scale-90"
+        >
+          <ArrowLeft className="w-6 h-6" />
+        </button>
+
         {restaurant.cover_image_url ? (
           <img src={restaurant.cover_image_url} alt={restaurant.name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black" />
+          <div className="w-full h-full bg-slate-900" />
         )}
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute bottom-6 left-4 right-4 text-white">
-          <h1 className="text-2xl sm:text-3xl font-black mb-1">{restaurant.name}</h1>
-          <p className="text-white/80 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-            <Info className="w-3 h-3" /> {restaurant.address || "Premium Dining"}
-          </p>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent" />
+        
+        <div className="absolute bottom-0 left-0 w-full p-6 md:p-10 text-white">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                 <Badge variant="success" className="bg-emerald-500 text-white border-none font-black text-[10px] uppercase tracking-widest px-3">Open Now</Badge>
+                 <div className="flex items-center gap-1 text-amber-400">
+                    <Star className="w-3 h-3 fill-amber-400" />
+                    <span className="text-xs font-black uppercase tracking-widest">4.9 (500+)</span>
+                 </div>
+              </div>
+              <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">{restaurant.name}</h1>
+              <p className="text-slate-300 text-sm font-medium flex items-center gap-2">
+                <Info className="w-4 h-4" /> {restaurant.address || "Digital Menu Experience"}
+              </p>
+            </div>
+            
+            <div className="hidden md:flex items-center gap-8 border-l border-white/20 pl-8">
+               <div className="text-center">
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Avg Prep</p>
+                 <p className="text-xl font-black">15-20m</p>
+               </div>
+               <div className="text-center">
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Safety</p>
+                 <ShieldCheck className="w-6 h-6 text-emerald-400 mx-auto" />
+               </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100">
-        <div className="max-w-screen-md mx-auto px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      {/* Intelligence Control Bar */}
+      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
+        <div className="max-w-screen-md mx-auto p-4 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder={getCustomLabel(restaurant.restaurant_type, "Search for dishes...")}
+                placeholder="What are you craving?"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 font-medium"
+                className="w-full pl-11 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-4 focus:ring-emerald-600/10 placeholder:text-slate-400 transition-all"
               />
             </div>
             
-            {/* Veg Toggle */}
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase text-gray-400 tracking-tighter">Veg Only</span>
-              <button 
-                onClick={() => setVegOnly(!vegOnly)}
-                className={`w-10 h-5 rounded-full relative transition-colors ${vegOnly ? 'bg-green-600' : 'bg-gray-200'}`}
-              >
-                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all`} style={{ left: vegOnly ? 'calc(100% - 18px)' : '2px' }} />
-              </button>
-            </div>
+            <button 
+              onClick={() => setVegOnly(!vegOnly)}
+              className={`flex items-center gap-2 px-4 py-3.5 rounded-2xl border-2 transition-all ${vegOnly ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-100 text-slate-400'}`}
+            >
+              <div className={`w-3 h-3 rounded-full border-2 ${vegOnly ? 'bg-white border-white' : 'border-slate-300'}`}></div>
+              <span className="text-[10px] font-black uppercase tracking-widest">Veg Only</span>
+            </button>
           </div>
 
-          {/* Category Anchors */}
           {!searchTerm && groupedItems.length > 0 && (
             <CategoryNav 
               categories={groupedItems} 
@@ -396,27 +335,33 @@ const CustomerMenu: React.FC = () => {
         </div>
       </div>
 
-      {/* Menu Sections */}
-      <div className="max-w-screen-md mx-auto px-4 py-6">
+      {/* Menu Catalog */}
+      <div className="max-w-screen-md mx-auto px-4 py-10">
         {groupedItems.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-gray-400 font-bold">No matches found for your criteria.</p>
+             <div className="w-16 h-16 bg-slate-50 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                <Search className="w-8 h-8 text-slate-200" />
+             </div>
+             <p className="text-slate-400 font-black uppercase tracking-widest text-xs">No flavor matches found.</p>
           </div>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-16">
             {groupedItems.map((group) => (
               <div 
                 key={group.category.id} 
                 id={group.category.id}
                 ref={(el) => { categoryRefs.current[group.category.id] = el; }}
-                className="scroll-mt-36"
+                className="scroll-mt-40 animate-in fade-in slide-in-from-bottom-2"
               >
-                <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
-                  {group.category.name}
-                  <span className="text-xs text-gray-300 font-bold">({group.items.length})</span>
-                </h2>
+                <div className="flex items-center gap-4 mb-10">
+                   <h2 className="text-3xl font-black text-slate-900 tracking-tighter">
+                    {group.category.name}
+                  </h2>
+                  <div className="h-px flex-1 bg-slate-100"></div>
+                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{group.items.length} Choice{group.items.length > 1 ? 's' : ''}</span>
+                </div>
                 
-                <div className="space-y-8 divide-y divide-gray-100">
+                <div className="grid grid-cols-1 gap-12">
                   {group.items.map((item) => (
                     <MenuItemCard 
                       key={item.id}
@@ -434,14 +379,14 @@ const CustomerMenu: React.FC = () => {
         )}
       </div>
 
-      {/* Floating Cart Bar */}
+      {/* Persistent Value Bar (Cart) */}
       <CartBar 
         cartCount={cartCount} 
         cartTotal={cartTotal} 
         onClick={() => setShowCart(true)} 
       />
 
-      {/* Modals */}
+      {/* System Modals */}
       <CartModal
         isOpen={showCart}
         cart={cart}

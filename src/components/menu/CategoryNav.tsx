@@ -12,16 +12,18 @@ const CategoryNav: React.FC<CategoryNavProps> = ({
   onCategoryClick,
 }) => {
   return (
-    <div className="flex gap-2 overflow-x-auto scrollbar-hide no-scrollbar mt-3 pb-1">
+    <div className="flex gap-4 overflow-x-auto no-scrollbar mt-4 pb-2 -mx-4 px-4">
       {categories.map((group) => (
         <button
           key={group.category.id}
           onClick={() => onCategoryClick(group.category.id)}
-          className={`px-4 py-1.5 rounded-full text-[11px] font-black whitespace-nowrap transition-all uppercase tracking-wider ${
-            activeCategory === group.category.id
-              ? "bg-orange-600 text-white shadow-md shadow-orange-600/20"
-              : "bg-gray-50 text-gray-500 border border-gray-100"
-          }`}
+          className={`
+            px-6 py-2.5 rounded-2xl text-[10px] font-black whitespace-nowrap transition-all uppercase tracking-[0.2em] border-2
+            ${activeCategory === group.category.id
+              ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-200"
+              : "bg-white text-slate-400 border-slate-50 hover:border-slate-200 hover:text-slate-600"
+            }
+          `}
         >
           {group.category.name}
         </button>

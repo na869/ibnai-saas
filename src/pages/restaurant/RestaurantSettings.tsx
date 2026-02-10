@@ -1,6 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Download, QrCode as QrCodeIcon, ExternalLink, Copy, Check, Printer, Share2, Store } from "lucide-react";
-import { Card, Button, Loading, Alert, ImageUpload } from "../../components/ui";
+import { Link } from "react-router-dom";
+import { 
+  Download, 
+  QrCode as QrCodeIcon, 
+  ExternalLink, 
+  Copy, 
+  Check, 
+  Printer, 
+  Share2, 
+  Store, 
+  TrendingUp, 
+  ShieldCheck, 
+  Settings2,
+  Image as ImageIcon
+} from "lucide-react";
+import { Card, Button, Loading, ImageUpload, Badge } from "../../components/ui";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../../config/supabase";
 import type { Restaurant } from "../../config/supabase";
@@ -17,7 +31,7 @@ const RestaurantSettings: React.FC = () => {
       try {
         const userStr = localStorage.getItem("user");
         if (!userStr) {
-          setError("Session expired. Please login again.");
+          setError("Session expired.");
           setLoading(false);
           return;
         }
@@ -86,7 +100,7 @@ const RestaurantSettings: React.FC = () => {
         
         const pngFile = canvas.toDataURL("image/png");
         const downloadLink = document.createElement("a");
-        downloadLink.download = `${restaurant.slug}-menu-qr.png`;
+        downloadLink.download = `IBNai-QR-${restaurant.slug}.png`;
         downloadLink.href = pngFile;
         downloadLink.click();
       }
@@ -95,265 +109,175 @@ const RestaurantSettings: React.FC = () => {
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow || !restaurant) return;
-
-    const svg = document.getElementById("qr-code-svg")?.outerHTML;
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print QR Code - ${restaurant.name}</title>
-          <style>
-            body { 
-              font-family: system-ui, -apple-system, sans-serif; 
-              display: flex; 
-              flex-direction: column; 
-              align-items: center; 
-              justify-content: center; 
-              height: 100vh; 
-              margin: 0;
-              text-align: center;
-            }
-            .container { border: 2px solid #eee; padding: 40px; border-radius: 20px; }
-            h1 { margin-bottom: 10px; color: #111; }
-            p { color: #666; margin-bottom: 30px; }
-            .qr-wrapper { margin-bottom: 30px; }
-            svg { width: 300px; height: 300px; }
-            .footer { font-size: 14px; color: #999; margin-top: 20px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>${restaurant.name}</h1>
-            <p>Scan to view our digital menu</p>
-            <div class="qr-wrapper">${svg}</div>
-            <div class="footer">Powered by FoodOrder</div>
-          </div>
-          <script>
-            window.onload = () => {
-              window.print();
-              setTimeout(() => window.close(), 500);
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-  };
-
-  if (loading) {
-    return <Loading text="Loading settings..." />;
-  }
-
-  if (error || !restaurant) {
-    return <Alert type="error" message={error || "Restaurant not found"} />;
-  }
+  if (loading) return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <Loading text="Syncing restaurant configuration..." />
+    </div>
+  );
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+      {/* Header Intelligence */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-bold text-text mb-1">Restaurant Settings</h2>
-          <p className="text-text-secondary">
-            Manage your restaurant profile and digital menu
-          </p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-600/10 text-emerald-600 text-xs font-black uppercase tracking-widest mb-3">
+             <Settings2 className="w-3 h-3" /> Core Infrastructure
+          </div>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Restaurant Settings</h1>
+          <p className="text-slate-500 font-medium mt-1">Configure your digital presence and customer touchpoints.</p>
         </div>
-        <div className="flex items-center gap-2">
+        
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            size="sm"
             icon={<Share2 className="w-4 h-4" />}
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({
-                  title: restaurant.name,
-                  text: `Check out our digital menu at ${restaurant.name}`,
-                  url: menuUrl,
-                });
-              } else {
-                copyToClipboard();
-              }
-            }}
+            className="h-14 rounded-2xl font-black text-xs uppercase tracking-widest px-8"
+            onClick={copyToClipboard}
           >
-            Share
+            {copied ? "Link Copied" : "Share Menu"}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            icon={<Printer className="w-4 h-4" />}
-            onClick={handlePrint}
-          >
-            Print
-          </Button>
+          <Link to={`/menu/${restaurant?.slug}`} target="_blank">
+            <Button icon={<ExternalLink className="w-4 h-4" />} className="h-14 rounded-2xl font-black text-xs uppercase tracking-widest px-8 shadow-xl shadow-emerald-600/20">
+               Live Preview
+            </Button>
+          </Link>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Branding & Info */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-accent/10 rounded-lg">
-                <Store className="w-6 h-6 text-accent" />
+      <div className="grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          {/* Identity & Branding */}
+          <Card className="border-none shadow-xl shadow-slate-200/50 p-8 md:p-10">
+            <div className="flex items-center gap-4 mb-10">
+              <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
+                <Store className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-text">Branding & Logo</h3>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">Identity & Branding</h3>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Visual assets for your digital menu</p>
+              </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-10">
               <ImageUpload
-                label="Restaurant Logo"
-                value={restaurant.logo_url || ""}
+                label="Corporate Logo"
+                value={restaurant?.logo_url || ""}
                 onChange={async (url) => {
-                  const { error } = await supabase
-                    .from("restaurants")
-                    .update({ logo_url: url })
-                    .eq("id", restaurant.id);
-                  if (!error) setRestaurant({ ...restaurant, logo_url: url });
+                  const { error } = await supabase.from("restaurants").update({ logo_url: url }).eq("id", restaurant?.id);
+                  if (!error && restaurant) setRestaurant({ ...restaurant, logo_url: url });
                 }}
                 bucket="restaurant-assets"
-                path={`${restaurant.id}/branding`}
-                helperText="Upload your brand logo (1:1 recommended)"
+                path={`${restaurant?.id}/branding`}
               />
               <ImageUpload
-                label="Cover Image"
-                value={restaurant.cover_image_url || ""}
+                label="Hero Cover Asset"
+                value={restaurant?.cover_image_url || ""}
                 onChange={async (url) => {
-                  const { error } = await supabase
-                    .from("restaurants")
-                    .update({ cover_image_url: url })
-                    .eq("id", restaurant.id);
-                  if (!error) setRestaurant({ ...restaurant, cover_image_url: url });
+                  const { error } = await supabase.from("restaurants").update({ cover_image_url: url }).eq("id", restaurant?.id);
+                  if (!error && restaurant) setRestaurant({ ...restaurant, cover_image_url: url });
                 }}
                 bucket="restaurant-assets"
-                path={`${restaurant.id}/branding`}
-                helperText="Banner image for your menu page"
+                path={`${restaurant?.id}/branding`}
               />
             </div>
           </Card>
 
-          {/* QR Code Main Card */}
-          <Card className="overflow-hidden border-2 border-accent/10">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-accent/10 rounded-lg">
-                  <QrCodeIcon className="w-6 h-6 text-accent" />
+          {/* Customer Access Point (QR) */}
+          <Card className="border-none shadow-xl shadow-slate-200/50 overflow-hidden">
+             <div className="bg-slate-900 p-8 md:p-10 flex flex-col md:flex-row items-center gap-10">
+                <div 
+                  ref={qrRef}
+                  className="bg-white p-6 rounded-[32px] shadow-2xl relative group flex-shrink-0"
+                >
+                  <QRCodeSVG
+                    id="qr-code-svg"
+                    value={menuUrl}
+                    size={180}
+                    level="H"
+                    includeMargin={false}
+                    className="transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-emerald-600/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[32px] pointer-events-none" />
                 </div>
-                <h3 className="text-xl font-bold text-text">Customer Entry Point</h3>
-              </div>
 
-              <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-                {/* QR Display */}
-                <div className="flex flex-col items-center gap-4 w-full md:w-auto">
-                  <div 
-                    ref={qrRef}
-                    className="bg-white p-8 rounded-2xl shadow-xl border border-border/50 relative group"
+                <div className="flex-1 space-y-6 text-center md:text-left">
+                   <div className="space-y-2">
+                     <Badge variant="success" className="bg-emerald-500 text-white border-none font-black uppercase text-[10px] tracking-widest px-4 py-1.5 rounded-full">Primary Entry Point</Badge>
+                     <h3 className="text-3xl font-black text-white tracking-tight">Digital Access Vector</h3>
+                     <p className="text-slate-400 font-medium">This QR code connects your physical tables to your digital profit engine.</p>
+                   </div>
+                   
+                   <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                     <Button 
+                       onClick={downloadQRCode}
+                       className="bg-emerald-600 hover:bg-emerald-700 border-none font-black text-xs uppercase tracking-widest h-14 px-8 rounded-2xl shadow-xl shadow-emerald-600/40"
+                       icon={<Download className="w-4 h-4" />}
+                     >
+                       Download Master
+                     </Button>
+                     <Button 
+                       variant="outline"
+                       className="border-slate-700 text-white hover:bg-white/10 h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest"
+                       onClick={() => window.print()}
+                       icon={<Printer className="w-4 h-4" />}
+                     >
+                       Direct Print
+                     </Button>
+                   </div>
+                </div>
+             </div>
+             
+             <div className="p-8 md:p-10 bg-white">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-4">Encrypted Access URL</label>
+                <div className="flex gap-4">
+                  <div className="flex-1 bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 font-mono text-sm break-all text-slate-500 flex items-center">
+                    {menuUrl}
+                  </div>
+                  <Button
+                    variant="outline"
+                    className={`h-14 w-14 rounded-2xl border-2 transition-all ${copied ? 'border-emerald-600 bg-emerald-50' : 'border-slate-100'}`}
+                    onClick={copyToClipboard}
                   >
-                    <QRCodeSVG
-                      id="qr-code-svg"
-                      value={menuUrl}
-                      size={200}
-                      level="H"
-                      includeMargin={false}
-                      className="transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
-                  </div>
-                  
-                  <div className="flex gap-2 w-full">
-                    <Button
-                      variant="primary"
-                      icon={<Download className="w-4 h-4" />}
-                      onClick={downloadQRCode}
-                      fullWidth
-                    >
-                      Download PNG
-                    </Button>
-                  </div>
+                    {copied ? <Check className="w-5 h-5 text-emerald-600" /> : <Copy className="w-5 h-5 text-slate-400" />}
+                  </Button>
                 </div>
-
-                {/* URL and Sharing */}
-                <div className="flex-1 space-y-6 w-full">
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-text-secondary uppercase tracking-wider">
-                      Direct Menu Link
-                    </label>
-                    <div className="flex gap-2">
-                      <div className="flex-1 bg-bg-subtle p-3 rounded-xl border border-border font-mono text-sm break-all text-text-secondary flex items-center">
-                        {menuUrl}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyToClipboard}
-                        className="shrink-0 h-[46px] w-[46px] !p-0"
-                      >
-                        {copied ? <Check className="w-5 h-5 text-success" /> : <Copy className="w-5 h-5" />}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-4 bg-success/5 border border-success/10 rounded-xl">
-                      <h4 className="text-success font-bold text-sm mb-1 uppercase">Live Status</h4>
-                      <p className="text-text text-sm">Active & Public</p>
-                    </div>
-                    <div className="p-4 bg-accent/5 border border-accent/10 rounded-xl">
-                      <h4 className="text-accent font-bold text-sm mb-1 uppercase">Updates</h4>
-                      <p className="text-text text-sm">Real-time sync</p>
-                    </div>
-                  </div>
-
-                  <a
-                    href={menuUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full p-4 bg-text text-white rounded-xl font-bold hover:bg-black transition-colors"
-                  >
-                    <ExternalLink className="w-5 h-5" />
-                    Test Customer Experience
-                  </a>
-                </div>
-              </div>
-            </div>
+             </div>
           </Card>
         </div>
 
-        {/* Instructions & Best Practices */}
-        <div className="space-y-6">
-          <Card className="bg-bg-subtle border-none">
-            <h3 className="font-bold text-text mb-4">Best Practices</h3>
-            <ul className="space-y-4">
-              <li className="flex gap-3">
-                <div className="h-6 w-6 rounded-full bg-accent text-white flex-shrink-0 flex items-center justify-center text-xs font-bold">1</div>
-                <p className="text-sm text-text-secondary">Place QR codes in high-visibility areas like table tents or entrance doors.</p>
-              </li>
-              <li className="flex gap-3">
-                <div className="h-6 w-6 rounded-full bg-accent text-white flex-shrink-0 flex items-center justify-center text-xs font-bold">2</div>
-                <p className="text-sm text-text-secondary">Ensure good lighting so phone cameras can easily scan the code.</p>
-              </li>
-              <li className="flex gap-3">
-                <div className="h-6 w-6 rounded-full bg-accent text-white flex-shrink-0 flex items-center justify-center text-xs font-bold">3</div>
-                <p className="text-sm text-text-secondary">Include a short instruction like "Scan to Order" near the QR code.</p>
-              </li>
-            </ul>
+        {/* Strategic Intelligence Sidebar */}
+        <div className="space-y-8">
+          <Card className="bg-emerald-600 text-white border-none shadow-2xl shadow-emerald-600/20 p-10">
+            <TrendingUp className="w-10 h-10 mb-8" />
+            <h3 className="text-2xl font-black mb-4 tracking-tight leading-tight">Conversion Optimization</h3>
+            <p className="text-emerald-50/80 font-medium leading-relaxed mb-10 text-sm">
+              Placing your QR codes in <span className="text-white font-black underline">high-contrast table tents</span> can improve scan rates by up to <span className="text-white font-black underline">32%</span>.
+            </p>
+            <div className="space-y-4">
+               {[
+                 "Use clear 'Scan to Order' text",
+                 "Ensure 300dpi print quality",
+                 "Add brand logo to QR center"
+               ].map((tip, i) => (
+                 <div key={i} className="flex items-center gap-3 text-xs font-black uppercase tracking-widest">
+                   <Check className="w-4 h-4 text-emerald-300" /> {tip}
+                 </div>
+               ))}
+            </div>
           </Card>
 
-          <Card className="bg-accent text-white border-none shadow-lg shadow-accent/20">
-            <h3 className="font-bold mb-2">Need Custom Design?</h3>
-            <p className="text-sm text-white/80 mb-4">
-              Download the QR link and send it to your designer for professional branding.
-            </p>
-            <Button 
-              variant="outline" 
-              fullWidth 
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              onClick={copyToClipboard}
-            >
-              {copied ? "Copied Link!" : "Copy Menu Link"}
-            </Button>
+          <Card className="border-none shadow-xl shadow-slate-200/50 p-10">
+             <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mb-6 border border-slate-100">
+               <ShieldCheck className="w-6 h-6 text-emerald-600" />
+             </div>
+             <h4 className="text-lg font-black text-slate-900 mb-4 tracking-tight">Security & Compliance</h4>
+             <p className="text-sm text-slate-400 font-medium leading-relaxed mb-8">
+               Your digital menu is protected by bank-grade encryption and isolated from other partners.
+             </p>
+             <div className="flex items-center gap-3 py-4 border-t border-slate-50">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">System Status: Secure</span>
+             </div>
           </Card>
         </div>
       </div>

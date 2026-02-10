@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Public pages
-import LandingPage from "./pages/public/LandingPage";
+import Home from "./pages/Home";
 import RegisterPage from "./pages/public/RegisterPage";
 import LoginPage from "./pages/public/LoginPage";
 import ForgotPassword from "./pages/public/ForgotPassword";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 // Restaurant dashboard
 import RestaurantDashboard from "./pages/restaurant/Dashboard";
@@ -28,10 +30,12 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<Home />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
 
         {/* Restaurant Dashboard Routes */}
         <Route path="/restaurant/*" element={<RestaurantDashboard />} />

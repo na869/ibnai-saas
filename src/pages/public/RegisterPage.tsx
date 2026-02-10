@@ -1,373 +1,191 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { Store, ArrowLeft, CheckCircle } from "lucide-react";
-import {
-  Button,
-  Input,
-  Select,
-  Textarea,
-  Alert,
-  Card,
-} from "../../components/ui";
-import { APP_CONFIG } from "../../config/config";
-import { supabase } from "../../config/supabase";
-import { isValidEmail, isValidPhone } from "../../utils/helpers";
-
-interface FormData {
-  restaurant_name: string;
-  owner_name: string;
-  phone: string;
-  email: string;
-  city: string;
-  address: string;
-  restaurant_type: string;
-  heard_from: string;
-  notes: string;
-}
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, Store, ArrowRight, User, Phone, CheckCircle2 } from 'lucide-react';
+import { Button, Input } from '../../components/ui';
 
 const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState<FormData>({
-    restaurant_name: "",
-    owner_name: "",
-    phone: "",
-    email: "",
-    city: "",
-    address: "",
-    restaurant_type: "",
-    heard_from: "",
-    notes: "",
+  const [step, setStep] = useState(1); // 1: Basic Info, 2: Restaurant Details
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    restaurantName: '',
   });
-
-  const [errors, setErrors] = useState<Partial<FormData>>({});
-
-  const validateForm = (): boolean => {
-    const newErrors: Partial<FormData> = {};
-
-    if (!formData.restaurant_name.trim()) {
-      newErrors.restaurant_name = "Restaurant name is required";
-    }
-
-    if (!formData.owner_name.trim()) {
-      newErrors.owner_name = "Owner name is required";
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!isValidPhone(formData.phone)) {
-      newErrors.phone = "Please enter a valid 10-digit phone number";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!isValidEmail(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-
-    if (!formData.city.trim()) {
-      newErrors.city = "City is required";
-    }
-
-    if (!formData.restaurant_type) {
-      newErrors.restaurant_type = "Restaurant type is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (!validateForm()) {
+    if (step === 1) {
+      setStep(2);
       return;
     }
-
+    
     setLoading(true);
-
-    try {
-      // Insert registration request into Supabase
-      const { error: insertError } = await supabase
-        .from("registration_requests")
-        .insert([
-          {
-            restaurant_name: formData.restaurant_name.trim(),
-            owner_name: formData.owner_name.trim(),
-            phone: formData.phone.replace(/[\s\-()]/g, ""),
-            email: formData.email.trim().toLowerCase(),
-            city: formData.city.trim(),
-            address: formData.address.trim(),
-            restaurant_type: formData.restaurant_type,
-            heard_from: formData.heard_from,
-            notes: formData.notes.trim(),
-            status: "pending",
-          },
-        ]);
-
-      if (insertError) {
-        throw insertError;
-      }
-
-      // Success!
-      setSuccess(true);
-    } catch (err: any) {
-      console.error("Registration error:", err);
-      setError(
-        err.message || "Failed to submit registration. Please try again."
-      );
-    } finally {
+    // Simulate API call
+    setTimeout(() => {
       setLoading(false);
-    }
+      navigate('/restaurant/dashboard');
+    }, 1500);
   };
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error for this field
-    if (errors[name as keyof FormData]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  // Success Screen
-  if (success) {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center px-4">
-        <Card className="max-w-lg w-full text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-success/10 mb-6">
-            <CheckCircle className="w-12 h-12 text-success" />
-          </div>
-          <h1 className="text-2xl font-bold text-text mb-3">
-            Application Submitted!
-          </h1>
-          <p className="text-text-secondary mb-6">
-            Thank you for your interest in {APP_CONFIG.appName}! Our team will
-            verify your details and contact you within 24 hours on{" "}
-            <strong>{formData.phone}</strong>
-            {formData.email && ` and ${formData.email}`}.
-          </p>
-          <div className="space-y-3">
-            <div className="bg-bg-subtle rounded-lg p-4 text-left">
-              <h3 className="font-semibold text-text mb-2">
-                What happens next?
-              </h3>
-              <ul className="space-y-2 text-sm text-text-secondary">
-                <li className="flex items-start">
-                  <span className="text-accent mr-2">1.</span>
-                  <span>Our team reviews your registration</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-accent mr-2">2.</span>
-                  <span>
-                    We call you to verify details and explain the process
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-accent mr-2">3.</span>
-                  <span>
-                    Once verified, you'll receive login credentials via
-                    SMS/WhatsApp
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-accent mr-2">4.</span>
-                  <span>Start your 14-day free trial immediately!</span>
-                </li>
-              </ul>
-            </div>
-            <Link to="/">
-              <Button variant="outline" fullWidth>
-                Back to Home
-              </Button>
-            </Link>
-          </div>
-        </Card>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-bg py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            to="/"
-            className="inline-flex items-center text-text-secondary hover:text-text mb-6"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Home
-          </Link>
-          <div className="flex items-center space-x-3 mb-4">
-            <Store className="w-10 h-10 text-accent" />
-            <div>
-              <h1 className="text-3xl font-bold text-text">
-                Register Your Restaurant
-              </h1>
-              <p className="text-text-secondary">
-                Start your digital journey today
-              </p>
+    <div className="min-h-screen grid lg:grid-cols-2 bg-white">
+      {/* Left Side - Visuals (Swapped for Register to vary layout) */}
+      <div className="hidden lg:flex flex-col bg-emerald-900 relative overflow-hidden p-20 justify-between">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1559339352-11d035aa65de?ixlib=rb-4.0.3&auto=format&fit=crop&w=1974&q=80')] bg-cover bg-center opacity-20 mix-blend-luminosity"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-emerald-900/0 via-emerald-900/50 to-emerald-900"></div>
+        
+        <div className="relative z-10">
+          <Link to="/" className="flex items-center gap-2 group mb-12">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <Store className="w-6 h-6 text-emerald-900" />
             </div>
-          </div>
+            <span className="text-2xl font-black tracking-tighter text-white">IBNai</span>
+          </Link>
+          
+          <h2 className="text-5xl font-black text-white leading-tight mb-8">
+            Join the Revolution in Dining.
+          </h2>
+          <ul className="space-y-6">
+            {[
+              "Setup your menu in 5 minutes",
+              "Accept unlimited QR orders",
+              "No hardware required",
+              "Cancel anytime"
+            ].map((item, i) => (
+              <li key={i} className="flex items-center gap-4 text-emerald-100 font-bold text-lg">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400" /> {item}
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Form */}
-        <Card>
-          {error && <Alert type="error" message={error} className="mb-6" />}
+        <div className="relative z-10">
+          <div className="flex -space-x-4 mb-4">
+             {[1,2,3,4].map(i => (
+               <div key={i} className="w-12 h-12 rounded-full border-4 border-emerald-900 bg-slate-200 flex items-center justify-center overflow-hidden">
+                 <img src={`https://i.pravatar.cc/100?u=${i + 10}`} alt="Owner" />
+               </div>
+             ))}
+          </div>
+          <p className="text-emerald-100 font-medium">Join 500+ restaurant owners growing with IBNai.</p>
+        </div>
+      </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Restaurant Details */}
-            <div>
-              <h2 className="text-lg font-semibold text-text mb-4">
-                Restaurant Details
-              </h2>
-              <div className="space-y-4">
-                <Input
-                  label="Restaurant Name"
-                  name="restaurant_name"
-                  value={formData.restaurant_name}
-                  onChange={handleChange}
-                  error={errors.restaurant_name}
-                  placeholder="e.g., Tasty Bites Restaurant"
-                  required
-                />
+      {/* Right Side - Form */}
+      <div className="flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12 relative">
+         <div className="lg:hidden mb-8">
+           <Link to="/" className="flex items-center gap-2">
+            <Store className="w-8 h-8 text-emerald-600" />
+            <span className="text-2xl font-black text-slate-900">IBNai</span>
+           </Link>
+         </div>
 
-                <Select
-                  label="Restaurant Type"
-                  name="restaurant_type"
-                  value={formData.restaurant_type}
-                  onChange={handleChange}
-                  error={errors.restaurant_type}
-                  options={APP_CONFIG.restaurantTypes.map((type) => ({
-                    value: type,
-                    label: type,
-                  }))}
-                  required
-                />
+         <div className="max-w-md w-full mx-auto">
+           <div className="mb-8">
+             <div className="flex items-center gap-2 mb-4">
+               <span className={`w-8 h-1 rounded-full ${step >= 1 ? 'bg-emerald-600' : 'bg-slate-200'}`}></span>
+               <span className={`w-8 h-1 rounded-full ${step >= 2 ? 'bg-emerald-600' : 'bg-slate-200'}`}></span>
+             </div>
+             <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-3">
+               {step === 1 ? 'Create Your Account' : 'Setup Restaurant'}
+             </h1>
+             <p className="text-slate-500 font-medium text-lg">
+               {step === 1 ? 'Start your 14-day free trial. No credit card required.' : 'Tell us about your business.'}
+             </p>
+           </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input
-                    label="City"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    error={errors.city}
-                    placeholder="e.g., Mumbai"
-                    required
-                  />
+           <form onSubmit={handleSubmit} className="space-y-6">
+             {step === 1 ? (
+               <>
+                 <Input
+                   label="Full Name"
+                   type="text"
+                   placeholder="John Doe"
+                   icon={<User className="w-5 h-5" />}
+                   value={formData.name}
+                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                   required
+                   autoFocus
+                 />
+                 <Input
+                   label="Email Address"
+                   type="email"
+                   placeholder="owner@restaurant.com"
+                   icon={<Mail className="w-5 h-5" />}
+                   value={formData.email}
+                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                   required
+                 />
+                 <Input
+                   label="Password"
+                   type="password"
+                   placeholder="Create a strong password"
+                   icon={<Lock className="w-5 h-5" />}
+                   value={formData.password}
+                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                   required
+                 />
+               </>
+             ) : (
+               <>
+                 <Input
+                   label="Restaurant Name"
+                   type="text"
+                   placeholder="Tasty Bites"
+                   icon={<Store className="w-5 h-5" />}
+                   value={formData.restaurantName}
+                   onChange={(e) => setFormData({ ...formData, restaurantName: e.target.value })}
+                   required
+                   autoFocus
+                 />
+                 <Input
+                   label="Phone Number"
+                   type="tel"
+                   placeholder="+91 98765 43210"
+                   icon={<Phone className="w-5 h-5" />}
+                   value={formData.phone}
+                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                   required
+                 />
+                 <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                   <p className="text-xs text-emerald-800 font-bold leading-relaxed">
+                     By clicking "Launch Dashboard", you agree to our Terms of Service and Privacy Policy. You will not be charged today.
+                   </p>
+                 </div>
+               </>
+             )}
 
-                  <Input
-                    label="Address (Optional)"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    placeholder="Street address"
-                  />
-                </div>
-              </div>
-            </div>
+             <div className="flex gap-4">
+               {step === 2 && (
+                 <Button type="button" variant="ghost" onClick={() => setStep(1)} className="w-1/3">
+                   Back
+                 </Button>
+               )}
+               <Button 
+                 type="submit" 
+                 fullWidth 
+                 size="lg" 
+                 loading={loading}
+                 className="shadow-xl shadow-emerald-600/20"
+                 icon={step === 1 ? <ArrowRight className="w-5 h-5" /> : <Store className="w-5 h-5" />}
+               >
+                 {step === 1 ? 'Next Step' : 'Launch Dashboard'}
+               </Button>
+             </div>
+           </form>
 
-            {/* Owner Details */}
-            <div>
-              <h2 className="text-lg font-semibold text-text mb-4">
-                Owner Details
-              </h2>
-              <div className="space-y-4">
-                <Input
-                  label="Owner Name"
-                  name="owner_name"
-                  value={formData.owner_name}
-                  onChange={handleChange}
-                  error={errors.owner_name}
-                  placeholder="Your full name"
-                  required
-                />
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input
-                    label="Phone Number"
-                    name="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    error={errors.phone}
-                    placeholder="10-digit mobile number"
-                    required
-                  />
-
-                  <Input
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    error={errors.email}
-                    placeholder="your@email.com"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Info */}
-            <div>
-              <h2 className="text-lg font-semibold text-text mb-4">
-                Additional Information
-              </h2>
-              <div className="space-y-4">
-                <Select
-                  label="How did you hear about us?"
-                  name="heard_from"
-                  value={formData.heard_from}
-                  onChange={handleChange}
-                  options={APP_CONFIG.heardFromOptions.map((option) => ({
-                    value: option,
-                    label: option,
-                  }))}
-                />
-
-                <Textarea
-                  label="Additional Notes (Optional)"
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  placeholder="Any specific requirements or questions..."
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            {/* Terms */}
-            <div className="bg-bg-subtle rounded-lg p-4 text-sm text-text-secondary">
-              By submitting this form, you agree to our Terms of Service and
-              Privacy Policy. Our team will contact you within 24 hours to
-              verify your details.
-            </div>
-
-            {/* Submit Button */}
-            <Button type="submit" loading={loading} fullWidth size="lg">
-              Submit Registration
-            </Button>
-
-            {/* Login Link */}
-            <p className="text-center text-sm text-text-secondary">
-              Already have an account?{" "}
-              <Link
-                to="/login"
-                className="text-accent font-medium hover:underline"
-              >
-                Login here
-              </Link>
-            </p>
-          </form>
-        </Card>
+           <div className="mt-8 text-center">
+             <p className="text-slate-500 font-medium">
+               Already have an account?{' '}
+               <Link to="/login" className="text-emerald-600 font-bold hover:underline">
+                 Sign In
+               </Link>
+             </p>
+           </div>
+         </div>
       </div>
     </div>
   );

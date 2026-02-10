@@ -1,5 +1,5 @@
 import React from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Zap } from "lucide-react";
 
 interface LoadingProps {
   fullScreen?: boolean;
@@ -8,24 +8,29 @@ interface LoadingProps {
 
 export const Loading: React.FC<LoadingProps> = ({
   fullScreen = false,
-  text = "Loading...",
+  text = "Synthesizing...",
 }) => {
   const content = (
-    <div className="flex flex-col items-center justify-center">
-      <Loader2 className="w-10 h-10 text-accent animate-spin mb-3" />
-      <p className="text-text-secondary">{text}</p>
+    <div className="flex flex-col items-center justify-center text-center p-8">
+      <div className="relative mb-6">
+        <Loader2 className="w-16 h-16 text-emerald-600 animate-spin opacity-20" />
+        <div className="absolute inset-0 flex items-center justify-center">
+           <Zap className="w-6 h-6 text-emerald-600 animate-pulse" />
+        </div>
+      </div>
+      <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">{text}</p>
     </div>
   );
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-white/80 backdrop-blur-xl flex items-center justify-center z-[100]">
         {content}
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center py-12">{content}</div>
+    <div className="flex items-center justify-center py-20 w-full">{content}</div>
   );
 };
