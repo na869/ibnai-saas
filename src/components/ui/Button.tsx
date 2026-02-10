@@ -29,7 +29,7 @@ export const Button: React.FC<ButtonProps> = ({
       "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20 border border-transparent",
     outline:
       "bg-white border-2 border-slate-200 text-slate-700 hover:border-emerald-600 hover:text-emerald-600 hover:bg-emerald-50",
-    ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+    ghost: "hover:bg-slate-100 hover:text-slate-900 transition-colors",
     danger: "bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20",
   };
 

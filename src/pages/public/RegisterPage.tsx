@@ -160,7 +160,7 @@ const RegisterPage: React.FC = () => {
 
              <div className="flex gap-4">
                {step === 2 && (
-                 <Button type="button" variant="ghost" onClick={() => setStep(1)} className="w-1/3">
+                 <Button type="button" variant="ghost" onClick={() => setStep(1)} className="w-1/3 text-slate-600 font-bold">
                    Back
                  </Button>
                )}
