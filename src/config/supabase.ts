@@ -10,10 +10,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-if (!supabaseUrl.startsWith("http")) {
-  console.error("⚠️ Invalid Supabase URL: URL must start with http:// or https://");
-}
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -42,6 +38,8 @@ export interface RegistrationRequest {
   rejection_reason?: string;
   internal_notes?: string;
   created_at: string;
+  payment_proof_url?: string;
+  requested_plan?: string;
 }
 
 export interface Restaurant {
@@ -58,6 +56,9 @@ export interface Restaurant {
   logo_url?: string;
   cover_image_url?: string;
   qr_code_url?: string;
+  primary_color?: string;
+  gstin?: string;
+  upi_id?: string;
   subscription_plan: "starter_pack" | "growth_pack" | "customizeble_pack" | "free_trial";
   status: "active" | "blocked" | "trial";
   is_active: boolean;
@@ -98,7 +99,7 @@ export interface Order {
   id: string;
   restaurant_id: string;
   order_number: string;
-  order_type: "qr" | "counter" | "phone" | "table";
+  order_type: "qr" | "counter" | "phone" | "table" | "dine_in" | "takeaway";
   table_number?: string;
   customer_name?: string;
   customer_phone?: string;
