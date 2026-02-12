@@ -174,13 +174,21 @@ const Home: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-40 px-6 bg-slate-900 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-emerald-600/10 mix-blend-overlay"></div>
+      <section className="py-40 px-6 bg-slate-950 text-center relative overflow-hidden">
+        {/* Subtle glow elements positioned away from text */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/10 blur-[120px] pointer-events-none"></div>
+
         <div className="max-w-5xl mx-auto relative z-10">
-          <h2 className="text-6xl md:text-9xl font-black text-white tracking-tighter leading-[0.9] mb-12 italic">Ready to <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600">Serve Smart?</span></h2>
-          <p className="text-slate-400 text-xl md:text-2xl font-medium mb-16 max-w-2xl mx-auto">Join the new generation of profitable restaurants globally. Setup takes less than 5 minutes.</p>
+          <h2 className="text-6xl md:text-9xl font-black text-white tracking-tighter leading-[0.9] mb-12 italic">
+            Ready to <br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-500">Serve Smart?</span>
+          </h2>
+          <p className="text-slate-300 text-xl md:text-2xl font-medium mb-16 max-w-2xl mx-auto">
+            Join the new generation of profitable restaurants globally. Setup takes less than 5 minutes.
+          </p>
           <Link to="/register">
-            <Button size="lg" className="h-24 px-16 rounded-full bg-white hover:bg-slate-100 text-slate-900 font-black uppercase tracking-widest text-xl shadow-2xl group">
+            <Button size="lg" className="h-24 px-16 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black uppercase tracking-widest text-xl shadow-[0_20px_50px_rgba(16,185,129,0.3)] group border-none">
               Launch My DineOS Free
               <ArrowRight className="w-6 h-6 ml-4 transition-transform group-hover:translate-x-2" />
             </Button>
