@@ -12,18 +12,37 @@ import {
   TrendingUp, 
   ShieldCheck, 
   Settings2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Building2,
+  Phone as PhoneIcon,
+  MapPin,
+  CreditCard,
+  Hash,
+  Save,
+  Palette,
+  Lock
 } from "lucide-react";
-import { Card, Button, Loading, ImageUpload, Badge } from "../../components/ui";
+import { Card, Button, Loading, ImageUpload, Badge, Input } from "../../components/ui";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../../config/supabase";
 import type { Restaurant } from "../../config/supabase";
+import { hasFeature } from "../../utils/helpers";
+import { APP_CONFIG } from "../../config/config";
 
 const RestaurantSettings: React.FC = () => {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: "",
+    phone: "",
+    city: "",
+    address: "",
+    upi_id: "",
+    gstin: ""
+  });
   const qrRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -51,6 +70,18 @@ const RestaurantSettings: React.FC = () => {
 
         if (fetchError) throw fetchError;
         setRestaurant(data);
+        setProfileData({
+          name: data.name || "",
+          phone: data.phone || "",
+          city: data.city || "",
+          address: data.address || "",
+          upi_id: data.upi_id || "",
+          gstin: data.gstin || ""
+        });
+
+        // Update local storage session with latest plan info
+        const updatedUser = { ...user, restaurant: { ...user.restaurant, subscription_plan: data.subscription_plan } };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
       } catch (err: any) {
         console.error("Error fetching restaurant:", err);
         setError("Failed to load restaurant details");
@@ -61,6 +92,25 @@ const RestaurantSettings: React.FC = () => {
 
     fetchRestaurant();
   }, []);
+
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("restaurants")
+        .update(profileData)
+        .eq("id", restaurant?.id);
+      
+      if (error) throw error;
+      if (restaurant) setRestaurant({ ...restaurant, ...profileData });
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("Failed to save profile");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const menuUrl = restaurant 
     ? `${window.location.origin}/menu/${restaurant.slug}`
@@ -146,6 +196,107 @@ const RestaurantSettings: React.FC = () => {
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
+          {/* Business Profile */}
+          <Card className="border-none shadow-xl shadow-slate-200/50 p-8 md:p-10">
+            <div className="flex items-center justify-between mb-10">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Building2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Business Profile</h3>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Public contact information</p>
+                </div>
+              </div>
+              <Button 
+                onClick={handleProfileSave} 
+                loading={saving}
+                icon={<Save className="w-4 h-4" />}
+                className="rounded-xl h-12 px-6 font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-600/20"
+              >
+                Save Profile
+              </Button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <Input
+                  label="Restaurant Name"
+                  value={profileData.name}
+                  onChange={e => setProfileData({...profileData, name: e.target.value})}
+                  icon={<Store className="w-4 h-4" />}
+                />
+                <Input
+                  label="Contact Phone"
+                  value={profileData.phone}
+                  onChange={e => setProfileData({...profileData, phone: e.target.value})}
+                  icon={<PhoneIcon className="w-4 h-4" />}
+                />
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <Input
+                  label="City"
+                  value={profileData.city}
+                  onChange={e => setProfileData({...profileData, city: e.target.value})}
+                  icon={<MapPin className="w-4 h-4" />}
+                />
+                <Input
+                  label="Physical Address"
+                  value={profileData.address}
+                  onChange={e => setProfileData({...profileData, address: e.target.value})}
+                  icon={<MapPin className="w-4 h-4" />}
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Financial Infrastructure */}
+          <Card className="border-none shadow-xl shadow-slate-200/50 p-8 md:p-10 relative overflow-hidden">
+            <div className="flex items-center justify-between mb-10">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
+                  <CreditCard className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Financial Infrastructure</h3>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Payment & Tax configuration</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <Input
+                label="UPI ID (for payments)"
+                value={profileData.upi_id}
+                onChange={e => setProfileData({...profileData, upi_id: e.target.value})}
+                placeholder="merchant@upi"
+                icon={<CreditCard className="w-4 h-4" />}
+                disabled={!hasFeature(restaurant?.subscription_plan, "upi")}
+              />
+              <Input
+                label="GSTIN Number"
+                value={profileData.gstin}
+                onChange={e => setProfileData({...profileData, gstin: e.target.value})}
+                placeholder="22AAAAA0000A1Z5"
+                icon={<Hash className="w-4 h-4" />}
+                disabled={!hasFeature(restaurant?.subscription_plan, "upi")}
+              />
+            </div>
+
+            {!hasFeature(restaurant?.subscription_plan, "upi") && (
+              <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-[2px] rounded-[32px] flex flex-col items-center justify-center p-6 text-center z-10 border-2 border-emerald-500/20">
+                <div className="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center mb-4 shadow-xl">
+                  <Lock className="w-6 h-6 text-white" />
+                </div>
+                <h4 className="text-lg font-black text-white mb-2 tracking-tight uppercase">Premium Infrastructure</h4>
+                <p className="text-xs text-slate-400 font-bold max-w-xs mb-6 uppercase tracking-widest leading-loose">Enable UPI payments and GST invoicing with our Customizable plan.</p>
+                <Link to="/restaurant/settings">
+                  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white border-none rounded-2xl h-12 px-8 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-600/40">Upgrade Now</Button>
+                </Link>
+              </div>
+            )}
+          </Card>
+
           {/* Identity & Branding */}
           <Card className="border-none shadow-xl shadow-slate-200/50 p-8 md:p-10">
             <div className="flex items-center gap-4 mb-10">
@@ -159,26 +310,83 @@ const RestaurantSettings: React.FC = () => {
             </div>
 
             <div className="grid md:grid-cols-2 gap-10">
-              <ImageUpload
-                label="Corporate Logo"
-                value={restaurant?.logo_url || ""}
-                onChange={async (url) => {
-                  const { error } = await supabase.from("restaurants").update({ logo_url: url }).eq("id", restaurant?.id);
-                  if (!error && restaurant) setRestaurant({ ...restaurant, logo_url: url });
-                }}
-                bucket="restaurant-assets"
-                path={`${restaurant?.id}/branding`}
-              />
-              <ImageUpload
-                label="Hero Cover Asset"
-                value={restaurant?.cover_image_url || ""}
-                onChange={async (url) => {
-                  const { error } = await supabase.from("restaurants").update({ cover_image_url: url }).eq("id", restaurant?.id);
-                  if (!error && restaurant) setRestaurant({ ...restaurant, cover_image_url: url });
-                }}
-                bucket="restaurant-assets"
-                path={`${restaurant?.id}/branding`}
-              />
+              <div className="relative">
+                <ImageUpload
+                  label="Corporate Logo"
+                  value={restaurant?.logo_url || ""}
+                  onChange={async (url) => {
+                    if (!hasFeature(restaurant?.subscription_plan, "customBranding")) return;
+                    const { error } = await supabase.from("restaurants").update({ logo_url: url }).eq("id", restaurant?.id);
+                    if (!error && restaurant) setRestaurant({ ...restaurant, logo_url: url });
+                  }}
+                  bucket="restaurant-assets"
+                  path={`${restaurant?.id}/branding`}
+                  disabled={!hasFeature(restaurant?.subscription_plan, "customBranding")}
+                />
+                {!hasFeature(restaurant?.subscription_plan, "customBranding") && (
+                  <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-[2px] rounded-3xl flex flex-col items-center justify-center p-6 text-center group cursor-not-allowed z-10 border border-white/10">
+                    <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                      <TrendingUp className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-xs font-black uppercase tracking-widest text-white">Growth Feature</p>
+                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">Upgrade to Growth Pack for custom branding</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="relative">
+                <ImageUpload
+                  label="Hero Cover Asset"
+                  value={restaurant?.cover_image_url || ""}
+                  onChange={async (url) => {
+                    if (!hasFeature(restaurant?.subscription_plan, "customBranding")) return;
+                    const { error } = await supabase.from("restaurants").update({ cover_image_url: url }).eq("id", restaurant?.id);
+                    if (!error && restaurant) setRestaurant({ ...restaurant, cover_image_url: url });
+                  }}
+                  bucket="restaurant-assets"
+                  path={`${restaurant?.id}/branding`}
+                  disabled={!hasFeature(restaurant?.subscription_plan, "customBranding")}
+                />
+                {!hasFeature(restaurant?.subscription_plan, "customBranding") && (
+                  <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-[2px] rounded-3xl flex flex-col items-center justify-center p-6 text-center group cursor-not-allowed z-10 border border-white/10">
+                    <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                      <TrendingUp className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-xs font-black uppercase tracking-widest text-white">Growth Feature</p>
+                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">Upgrade to Growth Pack for custom branding</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-10 pt-10 border-t border-slate-100">
+               <div className="flex items-center gap-3 mb-6">
+                  <Palette className="w-5 h-5 text-emerald-600" />
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-900">Brand Theme</h4>
+               </div>
+               
+               <div className="relative">
+                 <div className="flex flex-wrap gap-4">
+                    {['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#000000'].map(color => (
+                      <button
+                        key={color}
+                        onClick={async () => {
+                          if (!hasFeature(restaurant?.subscription_plan, "customBranding")) return; // Only for Customizable really?
+                          const { error } = await supabase.from("restaurants").update({ primary_color: color }).eq("id", restaurant?.id);
+                          if (!error && restaurant) setRestaurant({ ...restaurant, primary_color: color });
+                        }}
+                        className={`w-12 h-12 rounded-2xl border-4 transition-all ${restaurant?.primary_color === color ? 'border-slate-200 scale-110' : 'border-transparent hover:scale-105'}`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                 </div>
+                 
+                 {!hasFeature(restaurant?.subscription_plan, "customBranding") && (
+                    <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-[1px] rounded-2xl flex items-center justify-center z-10 border border-white/5">
+                       <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400 bg-slate-900/90 px-4 py-2 rounded-full shadow-2xl border border-emerald-500/20">Growth Pack Required</p>
+                    </div>
+                 )}
+               </div>
             </div>
           </Card>
 
@@ -217,7 +425,7 @@ const RestaurantSettings: React.FC = () => {
                      </Button>
                      <Button 
                        variant="outline"
-                       className="border-slate-700 text-white hover:bg-white/10 h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest"
+                       className="border-slate-700 text-slate-200 hover:bg-white hover:text-slate-900 h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
                        onClick={() => window.print()}
                        icon={<Printer className="w-4 h-4" />}
                      >
@@ -230,12 +438,12 @@ const RestaurantSettings: React.FC = () => {
              <div className="p-8 md:p-10 bg-white">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-4">Encrypted Access URL</label>
                 <div className="flex gap-4">
-                  <div className="flex-1 bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 font-mono text-sm break-all text-slate-500 flex items-center">
+                  <div className="flex-1 bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 font-mono text-sm break-all text-slate-500 flex items-center min-h-[56px]">
                     {menuUrl}
                   </div>
                   <Button
                     variant="outline"
-                    className={`h-14 w-14 rounded-2xl border-2 transition-all ${copied ? 'border-emerald-600 bg-emerald-50' : 'border-slate-100'}`}
+                    className={`h-14 w-20 shrink-0 rounded-2xl border-2 transition-all flex items-center justify-center ${copied ? 'border-emerald-600 bg-emerald-50' : 'border-slate-100'}`}
                     onClick={copyToClipboard}
                   >
                     {copied ? <Check className="w-5 h-5 text-emerald-600" /> : <Copy className="w-5 h-5 text-slate-400" />}

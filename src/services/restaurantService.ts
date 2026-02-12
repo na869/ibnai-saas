@@ -85,13 +85,15 @@ export const updateOrderStatus = async (
 // Helper to trigger cache invalidation (Calls a Supabase Edge Function or Backend Proxy)
 const invalidateCache = async (restaurantId: string) => {
   try {
-    // This calls your hypothetical Redis invalidation endpoint
-    // In a real Supabase setup, a Database Webhook is better (see explanation below)
+    // Suppressed to avoid CORS errors until Edge Function is deployed
+    console.log(`Cache invalidation requested for: ${restaurantId}`);
+    /*
     await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clear-menu-cache`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ restaurantId })
     });
+    */
   } catch (err) {
     console.warn("Cache invalidation failed (Expected if function not yet deployed)");
   }
@@ -321,6 +323,7 @@ export const getRestaurantStats = async (restaurantId: string) => {
       { data: todayOrders },
       { data: pendingOrders },
       { count: totalOrders },
+      { count: totalMenuItems },
     ] = await Promise.all([
       supabase
         .from("orders")
@@ -334,6 +337,10 @@ export const getRestaurantStats = async (restaurantId: string) => {
         .eq("status", "pending"),
       supabase
         .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("restaurant_id", restaurantId),
+      supabase
+        .from("menu_items")
         .select("*", { count: "exact", head: true })
         .eq("restaurant_id", restaurantId),
     ]);
@@ -350,6 +357,7 @@ export const getRestaurantStats = async (restaurantId: string) => {
       completedToday,
       revenueToday,
       totalOrders: totalOrders || 0,
+      totalMenuItems: totalMenuItems || 0,
     };
   } catch (error) {
     console.error("Error fetching restaurant stats:", error);

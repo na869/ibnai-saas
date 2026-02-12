@@ -182,27 +182,27 @@ const LandingPage: React.FC = () => {
             {[
               {
                 icon: QrCode,
-                title: "QR Code Ordering",
+                title: "Dynamic QR Menu",
                 description:
-                  "Customers scan your unique QR code to view menu and place orders instantly",
+                  "Instant digital menu access. Starter plan includes standard QR, Growth adds custom branding.",
               },
               {
                 icon: Smartphone,
-                title: "Mobile-First Design",
+                title: "Dine-in & Takeaway",
                 description:
-                  "Beautiful, fast interface that works perfectly on all devices",
+                  "Support for table orders on Starter. Growth and above unlock Takeaway capabilities.",
               },
               {
                 icon: TrendingUp,
-                title: "Real-Time Updates",
+                title: "Business Analytics",
                 description:
-                  "Get instant notifications for new orders. Update menu availability live",
+                  "Track your performance. Basic analytics for Growth, Advanced yield optimization for Customizable.",
               },
               {
                 icon: Clock,
-                title: "Save Time",
+                title: "Inventory Control",
                 description:
-                  "No more taking orders manually. Focus on cooking and serving",
+                  "Manage item availability in real-time. Up to 20 items on Starter, unlimited on Growth.",
               },
             ].map((feature, index) => (
               <div key={index} className="card text-center">
@@ -231,15 +231,15 @@ const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {Object.entries(APP_CONFIG.plans).map(([key, plan]) => (
               <div
                 key={key}
                 className={`card ${
-                  key === "starter" ? "ring-2 ring-accent relative" : ""
+                  key === "growth_pack" ? "ring-2 ring-accent relative" : ""
                 }`}
               >
-                {key === "starter" && (
+                {key === "growth_pack" && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-accent text-white px-4 py-1 rounded-full text-sm font-medium">
                     Most Popular
                   </div>
@@ -253,17 +253,10 @@ const LandingPage: React.FC = () => {
                       {APP_CONFIG.defaultCurrency}
                       {plan.price}
                     </span>
-                    {plan.price > 0 && (
-                      <span className="text-text-secondary">
-                        /{plan.duration}
-                      </span>
-                    )}
-                  </div>
-                  {plan.price === 0 && (
-                    <span className="text-sm text-text-secondary">
-                      {plan.duration}
+                    <span className="text-text-secondary">
+                      /{plan.duration}
                     </span>
-                  )}
+                  </div>
                 </div>
                 <ul className="space-y-3 mb-6">
                   {plan.features.map((feature, index) => (
@@ -273,12 +266,12 @@ const LandingPage: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                <Link to="/register">
+                <Link to={`/register?plan=${key}`}>
                   <Button
-                    variant={key === "starter" ? "primary" : "outline"}
+                    variant={key === "growth_pack" ? "primary" : "outline"}
                     fullWidth
                   >
-                    {plan.price === 0 ? "Start Free Trial" : "Get Started"}
+                    {key === "starter_pack" ? "Start Free Now" : "Get Started"}
                   </Button>
                 </Link>
               </div>

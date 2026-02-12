@@ -50,84 +50,47 @@ export const subscribeToPendingRequests = (
   return subscription;
 };
 
-// Create restaurant account from registration request
-export const createRestaurantAccount = async (
+// Approve request (handles both new account and upgrade)
+export const approveRequest = async (
   requestId: string,
   data: {
-    email: string;
     subscriptionPlan: string;
+    password?: string;
     internalNotes?: string;
   }
 ) => {
   try {
-    // 1. Get registration request
-    const { data: request, error: requestError } = await supabase
-      .from("registration_requests")
-      .select("*")
-      .eq("id", requestId)
-      .single();
-
-    if (requestError || !request) {
-      throw new Error("Registration request not found");
-    }
-
-    // 2. Generate slug and temp password
-    const slug = generateSlug(request.restaurant_name);
-    const tempPassword = generateTempPassword();
-
-    // 3. Create Auth User (This requires Service Role or an Edge Function)
-    // For now, we continue using the RPC which we should update to also handle Auth if possible,
-    // or call an Edge Function. Let's assume the RPC 'admin_create_restaurant' 
-    // is updated or we use an Edge Function.
-    
-    // IMPORTANT: In a production SaaS, you would call a Supabase Edge Function here
-    // that uses the Service Role Key to create the user in auth.users.
+    const passwordHash = data.password ? await hashPassword(data.password) : 'UPGRADE_NO_PASS';
     
     const { data: result, error: rpcError } = await supabase.rpc(
-      "admin_create_restaurant",
+      "admin_approve_request",
       {
         p_request_id: requestId,
-        p_restaurant_name: request.restaurant_name,
-        p_slug: slug,
-        p_owner_name: request.owner_name,
-        p_phone: request.phone,
-        p_email: data.email,
-        p_city: request.city,
-        p_address: request.address || null,
-        p_restaurant_type: request.restaurant_type,
         p_subscription_plan: data.subscriptionPlan,
-        p_password: tempPassword, // We send plain temp password to be handled by Auth in the next step
+        p_password_hash: passwordHash,
         p_internal_notes: data.internalNotes || null,
       }
     );
 
-    if (rpcError) {
-      console.error("RPC error:", rpcError);
-      throw new Error(rpcError.message);
-    }
+    if (rpcError) throw rpcError;
 
-    if (!result || result.length === 0 || !result[0].success) {
-      throw new Error(result?.[0]?.message || "Failed to create restaurant");
+    if (!result || result.length === 0 || !result[0].is_success) {
+      throw new Error(result?.[0]?.msg || "Failed to process request");
     }
 
     return {
       success: true,
-      restaurant: {
-        id: result[0].restaurant_id,
-        name: request.restaurant_name,
-        slug: slug,
-      },
-      credentials: {
-        email: data.email,
-        password: tempPassword,
-        loginUrl: `${window.location.origin}/login`,
-      },
+      isUpgrade: result[0].is_upg,
+      restaurantId: result[0].r_id,
+      credentials: data.password ? {
+        password: data.password,
+      } : null
     };
   } catch (error: any) {
-    console.error("Create account error:", error);
+    console.error("Approve error:", error);
     return {
       success: false,
-      error: error.message || "Failed to create account",
+      error: error.message || "Failed to process request",
     };
   }
 };
@@ -204,6 +167,7 @@ export const getPlatformStats = async () => {
       { count: pendingRequests },
       { count: totalOrders },
       { data: todayOrders },
+      { data: planCounts }
     ] = await Promise.all([
       supabase
         .from("restaurants")
@@ -221,16 +185,30 @@ export const getPlatformStats = async () => {
           "created_at",
           new Date(new Date().setHours(0, 0, 0, 0)).toISOString()
         ),
+      supabase.from("restaurants").select("subscription_plan")
     ]);
 
     const todayRevenue =
       todayOrders?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
+
+    const distribution: Record<string, number> = {
+      starter_pack: 0,
+      growth_pack: 0,
+      customizeble_pack: 0
+    };
+
+    planCounts?.forEach(r => {
+      if (r.subscription_plan && distribution[r.subscription_plan] !== undefined) {
+        distribution[r.subscription_plan]++;
+      }
+    });
 
     return {
       activeRestaurants: activeRestaurants || 0,
       pendingRequests: pendingRequests || 0,
       totalOrders: totalOrders || 0,
       todayRevenue,
+      planDistribution: distribution
     };
   } catch (error) {
     console.error("Error fetching stats:", error);

@@ -31,7 +31,9 @@ import {
   Area
 } from "recharts";
 import { supabase } from "../../config/supabase";
-import { formatCurrency } from "../../utils/helpers";
+import { formatCurrency, hasFeature } from "../../utils/helpers";
+import { Lock, Store } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface ReportData {
   totalRevenue: number;
@@ -46,10 +48,25 @@ const Reports: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [dateRange, setDateRange] = useState<"7" | "30" | "90">("30");
+  const [restaurant, setRestaurant] = useState<any>(null);
 
   useEffect(() => {
-    fetchReportData();
-  }, [dateRange]);
+    const fetchRestaurant = async () => {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!user.restaurant_id) return;
+      const { data } = await supabase.from("restaurants").select("*").eq("id", user.restaurant_id).single();
+      setRestaurant(data);
+    };
+    fetchRestaurant();
+  }, []);
+
+  useEffect(() => {
+    if (restaurant && hasFeature(restaurant.subscription_plan, "analytics")) {
+      fetchReportData();
+    } else if (restaurant) {
+      setLoading(false);
+    }
+  }, [dateRange, restaurant]);
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -151,6 +168,46 @@ const Reports: React.FC = () => {
     </div>
   );
 
+  if (restaurant && !hasFeature(restaurant.subscription_plan, "analytics")) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center animate-in fade-in slide-in-from-bottom-8 duration-1000">
+        <div className="relative mb-12">
+          <div className="w-32 h-32 bg-slate-900 rounded-[40px] flex items-center justify-center shadow-2xl relative z-10">
+            <TrendingUp className="w-16 h-16 text-emerald-500" />
+          </div>
+          <div className="absolute -top-4 -right-4 w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-xl z-20 animate-bounce">
+            <Lock className="w-6 h-6 text-white" />
+          </div>
+          <div className="absolute inset-0 bg-emerald-600/20 blur-3xl rounded-full scale-150 animate-pulse" />
+        </div>
+
+        <h2 className="text-4xl font-black text-slate-900 tracking-tight mb-6">Sales Intelligence Locked</h2>
+        <p className="text-slate-500 font-medium text-lg max-w-md mx-auto mb-10 leading-relaxed">
+          Advanced analytics and performance insights are exclusive to <span className="text-slate-900 font-black underline decoration-emerald-500 underline-offset-4">Growth</span> and <span className="text-slate-900 font-black underline decoration-emerald-500 underline-offset-4">Customizable</span> plans.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
+          <Link to="/restaurant/settings" className="flex-1">
+            <Button fullWidth size="lg" className="h-16 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-emerald-600/20">
+              Upgrade My Plan
+            </Button>
+          </Link>
+          <Link to="/restaurant" className="flex-1">
+            <Button fullWidth variant="outline" size="lg" className="h-16 rounded-2xl font-black uppercase tracking-widest text-xs border-slate-200">
+              Back to Home
+            </Button>
+          </Link>
+        </div>
+
+        <div className="mt-16 grid grid-cols-3 gap-8 w-full max-w-2xl opacity-40 grayscale">
+           <div className="h-32 bg-slate-100 rounded-3xl animate-pulse" />
+           <div className="h-32 bg-slate-100 rounded-3xl animate-pulse" />
+           <div className="h-32 bg-slate-100 rounded-3xl animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   const CHART_COLORS = ["#059669", "#6366F1", "#F59E0B", "#EF4444", "#8B5CF6"];
 
   return (
@@ -221,43 +278,45 @@ const Reports: React.FC = () => {
              </h3>
              <Badge className="bg-emerald-50 text-emerald-600 border-none font-black uppercase text-[10px] tracking-widest">Real-time Data</Badge>
           </div>
-          <div className="h-[350px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={reportData?.dailyRevenue}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#059669" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#059669" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="date" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }}
-                  dy={10}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }}
-                  dx={-10}
-                />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 900 }}
-                  cursor={{ stroke: '#059669', strokeWidth: 2 }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#059669" 
-                  strokeWidth={4}
-                  fillOpacity={1} 
-                  fill="url(#colorRevenue)" 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="h-[350px] w-full min-h-[350px]">
+            {reportData && (
+              <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={300}>
+                <AreaChart data={reportData.dailyRevenue} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#059669" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#059669" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }}
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }}
+                    dx={-10}
+                  />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 900 }}
+                    cursor={{ stroke: '#059669', strokeWidth: 2 }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="#059669" 
+                    strokeWidth={4}
+                    fillOpacity={1} 
+                    fill="url(#colorRevenue)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </Card>
 
@@ -267,31 +326,33 @@ const Reports: React.FC = () => {
                <PieChartIcon className="w-5 h-5 text-emerald-600" /> Channel Mix
              </h3>
           </div>
-          <div className="h-[350px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={reportData?.orderTypeDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={80}
-                  outerRadius={120}
-                  paddingAngle={8}
-                  dataKey="count"
-                >
-                  {reportData?.orderTypeDistribution.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} strokeWidth={0} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend 
-                  verticalAlign="bottom" 
-                  align="center" 
-                  iconType="circle"
-                  formatter={(value) => <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">{value}</span>}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="h-[350px] w-full min-h-[350px]">
+            {reportData && (
+              <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={300}>
+                <PieChart>
+                  <Pie
+                    data={reportData.orderTypeDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={80}
+                    outerRadius={120}
+                    paddingAngle={8}
+                    dataKey="count"
+                  >
+                    {reportData.orderTypeDistribution.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} strokeWidth={0} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    align="center" 
+                    iconType="circle"
+                    formatter={(value) => <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </Card>
       </div>

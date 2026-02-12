@@ -11,6 +11,7 @@ interface ImageUploadProps {
   path: string;
   helperText?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -21,11 +22,13 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   path,
   helperText,
   className = "",
+  disabled = false,
 }) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -73,32 +76,35 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               alt="Uploaded" 
               className="w-full h-40 object-cover"
             />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                className="bg-white text-text"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                Change
-              </Button>
-              <Button 
-                type="button" 
-                variant="danger" 
-                size="sm"
-                onClick={removeImage}
-              >
-                Remove
-              </Button>
-            </div>
+            {!disabled && (
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-white text-text"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Change
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="danger" 
+                  size="sm"
+                  onClick={removeImage}
+                >
+                  Remove
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div 
-            onClick={() => !uploading && fileInputRef.current?.click()}
+            onClick={() => !uploading && !disabled && fileInputRef.current?.click()}
             className={`
               h-40 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 
-              hover:border-accent hover:bg-accent/5 transition-all cursor-pointer
+              transition-all
+              ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50" : "hover:border-accent hover:bg-accent/5 cursor-pointer"}
               ${uploading ? "opacity-50 cursor-not-allowed" : ""}
             `}
           >

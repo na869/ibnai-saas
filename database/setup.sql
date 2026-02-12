@@ -49,7 +49,9 @@ CREATE TABLE IF NOT EXISTS restaurants (
   logo_url TEXT,
   cover_image_url TEXT,
   qr_code_url TEXT,
+  primary_color TEXT DEFAULT '#10b981',
   -- Billing & SaaS
+  gstin TEXT,
   upi_id TEXT,
   payment_qr_image_url TEXT,
   subscription_expiry TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '30 days'),

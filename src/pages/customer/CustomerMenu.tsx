@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Search, Info, Package, ChevronRight, Star, Clock, ShieldCheck, ShoppingBag, ArrowLeft } from "lucide-react";
+import { Search, Info, Package, ChevronRight, Star, Clock, ShieldCheck, ShoppingBag, ArrowLeft, MapPin } from "lucide-react";
 import { Loading, Badge, Button } from "../../components/ui";
 import {
   subscribeToMenuData,
@@ -255,7 +255,7 @@ const CustomerMenu: React.FC = () => {
   return (
     <div className="min-h-screen bg-white pb-40 font-sans selection:bg-emerald-100">
       {/* Premium Hero Header */}
-      <div className="relative h-64 md:h-80 overflow-hidden">
+      <div className="relative h-72 md:h-96 overflow-hidden">
         {/* Floating Back Button for PWA */}
         <button 
           onClick={() => navigate(-1)}
@@ -267,35 +267,34 @@ const CustomerMenu: React.FC = () => {
         {restaurant.cover_image_url ? (
           <img src={restaurant.cover_image_url} alt={restaurant.name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full bg-slate-900" />
+          <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
         
-        <div className="absolute bottom-0 left-0 w-full p-6 md:p-10 text-white">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                 <Badge variant="success" className="bg-emerald-500 text-white border-none font-black text-[10px] uppercase tracking-widest px-3">Open Now</Badge>
-                 <div className="flex items-center gap-1 text-amber-400">
-                    <Star className="w-3 h-3 fill-amber-400" />
-                    <span className="text-xs font-black uppercase tracking-widest">4.9 (500+)</span>
+        <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 text-white">
+          <div className="flex flex-col md:flex-row md:items-end gap-6 md:gap-10">
+            {restaurant.logo_url && (
+              <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-[32px] p-2 shadow-2xl flex-shrink-0 animate-in zoom-in duration-700">
+                <img src={restaurant.logo_url} alt="Logo" className="w-full h-full object-cover rounded-[24px]" />
+              </div>
+            )}
+            <div className="space-y-4 flex-1">
+              <div className="flex items-center gap-3">
+                 <Badge variant="success" className="bg-emerald-500 text-white border-none font-black text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg shadow-emerald-500/20">Open Now</Badge>
+                 <div className="flex items-center gap-1.5 text-amber-400 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <span className="text-xs font-black uppercase tracking-widest">4.9 Excellent</span>
                  </div>
               </div>
-              <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">{restaurant.name}</h1>
-              <p className="text-slate-300 text-sm font-medium flex items-center gap-2">
-                <Info className="w-4 h-4" /> {restaurant.address || "Digital Menu Experience"}
-              </p>
-            </div>
-            
-            <div className="hidden md:flex items-center gap-8 border-l border-white/20 pl-8">
-               <div className="text-center">
-                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Avg Prep</p>
-                 <p className="text-xl font-black">15-20m</p>
-               </div>
-               <div className="text-center">
-                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1">Safety</p>
-                 <ShieldCheck className="w-6 h-6 text-emerald-400 mx-auto" />
-               </div>
+              <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none animate-in slide-in-from-left-4 duration-700">{restaurant.name}</h1>
+              <div className="flex flex-wrap items-center gap-4 text-slate-300">
+                <p className="text-sm font-bold flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+                  <MapPin className="w-4 h-4 text-emerald-400" /> {restaurant.city || "Digital Menu"}
+                </p>
+                <p className="text-sm font-bold flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+                  <Clock className="w-4 h-4 text-emerald-400" /> 15-20 Min Prep
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -407,6 +406,7 @@ const CustomerMenu: React.FC = () => {
         cart={cart}
         restaurantId={restaurant.id}
         restaurantType={restaurant.restaurant_type}
+        subscriptionPlan={restaurant.subscription_plan}
         onClose={() => setShowCheckout(false)}
         onSuccess={() => { setCart([]); setShowCheckout(false); }}
       />

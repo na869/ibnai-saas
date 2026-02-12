@@ -100,14 +100,14 @@ const AllRestaurants: React.FC = () => {
 
   const getPlanBadge = (plan: string) => {
     const planConfig = APP_CONFIG.plans[plan as keyof typeof APP_CONFIG.plans];
-    if (!planConfig) return null;
+    if (!planConfig) return <Badge variant="neutral">{plan}</Badge>;
 
     return (
       <Badge
-        variant={plan === "enterprise" ? "success" : "neutral"}
+        variant={plan === "customizeble_pack" ? "success" : "neutral"}
         className="flex items-center space-x-1"
       >
-        {plan === "enterprise" && <Crown className="w-3 h-3" />}
+        {plan === "customizeble_pack" && <Crown className="w-3 h-3" />}
         <span>{planConfig.name}</span>
       </Badge>
     );
@@ -397,7 +397,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
             <div className="space-y-2 text-sm">
               <p className="text-text-secondary">
                 <strong className="text-text">Plan:</strong> {planConfig.name}{" "}
-                (${planConfig.price}/month)
+                ({APP_CONFIG.defaultCurrency}{planConfig.price}/month)
               </p>
               <p className="text-text-secondary">
                 <strong className="text-text">Features:</strong>{" "}

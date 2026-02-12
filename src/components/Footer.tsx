@@ -74,13 +74,13 @@ const Footer: React.FC = () => {
                   <p className="text-white font-black">+91 93909 49028</p>
                 </div>
               </a>
-              <a href="mailto:naseershaik@gmail.com" className="flex items-center gap-4 group">
+              <a href="mailto:ibnaidineos@gmail.com" className="flex items-center gap-4 group">
                 <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
                   <Mail className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Official Inquiry</p>
-                  <p className="text-white font-black">naseershaik@gmail.com</p>
+                  <p className="text-white font-black">ibnaidineos@gmail.com</p>
                 </div>
               </a>
             </div>

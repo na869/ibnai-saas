@@ -7,10 +7,12 @@ import {
   TrendingUp,
   AlertCircle,
 } from "lucide-react";
-import { Card, Loading } from "../../components/ui";
+import { Card, Loading, Button } from "../../components/ui";
 import { getPlatformStats } from "../../services/adminService";
 import { formatCurrency } from "../../utils/helpers";
 import { Link } from "react-router-dom";
+
+import { APP_CONFIG } from "../../config/config";
 
 const DashboardHome: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -19,12 +21,13 @@ const DashboardHome: React.FC = () => {
     pendingRequests: 0,
     totalOrders: 0,
     todayRevenue: 0,
+    planDistribution: {} as Record<string, number>
   });
 
   const loadStats = useCallback(async () => {
     setLoading(true);
     const data = await getPlatformStats();
-    setStats(data);
+    setStats(data as any);
     setLoading(false);
   }, []);
 
@@ -121,6 +124,34 @@ const DashboardHome: React.FC = () => {
               <DollarSign className="w-6 h-6 text-success" />
             </div>
           </div>
+        </Card>
+      </div>
+
+      {/* Network Intelligence */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <h3 className="text-lg font-black text-slate-900 mb-6 uppercase tracking-widest flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-emerald-600" /> Network Distribution
+          </h3>
+          <div className="grid sm:grid-cols-3 gap-6">
+            {Object.keys(APP_CONFIG.plans).map(planId => (
+              <div key={planId} className="p-6 bg-slate-50 rounded-[32px] border border-slate-100 flex flex-col items-center text-center">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{APP_CONFIG.plans[planId as keyof typeof APP_CONFIG.plans].name}</p>
+                <p className="text-4xl font-black text-slate-900 mb-1">{(stats.planDistribution && stats.planDistribution[planId]) || 0}</p>
+                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-tighter">Active Nodes</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="bg-slate-900 text-white border-none p-8 flex flex-col justify-center">
+           <h4 className="text-xl font-black mb-2 tracking-tight">Yield Multiplier</h4>
+           <p className="text-slate-400 text-sm font-medium leading-relaxed mb-6">
+             Your customizable pack adoption is at <span className="text-emerald-400 font-black">
+               {stats.activeRestaurants > 0 ? (((stats.planDistribution && stats.planDistribution['customizeble_pack']) || 0) / stats.activeRestaurants * 100).toFixed(1) : 0}%
+             </span>. Focus on upselling Growth features to increase MRR.
+           </p>
+           <Button variant="primary" className="bg-emerald-600 hover:bg-emerald-700 border-none font-black uppercase tracking-widest text-[10px]">Generate Strategy Report</Button>
         </Card>
       </div>
 

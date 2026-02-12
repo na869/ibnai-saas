@@ -10,6 +10,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+if (!supabaseUrl.startsWith("http")) {
+  console.error("⚠️ Invalid Supabase URL: URL must start with http:// or https://");
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -54,7 +58,7 @@ export interface Restaurant {
   logo_url?: string;
   cover_image_url?: string;
   qr_code_url?: string;
-  subscription_plan: "free_trial" | "starter" | "pro" | "enterprise";
+  subscription_plan: "starter_pack" | "growth_pack" | "customizeble_pack" | "free_trial";
   status: "active" | "blocked" | "trial";
   is_active: boolean;
   internal_notes?: string;

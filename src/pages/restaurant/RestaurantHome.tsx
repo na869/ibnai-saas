@@ -14,9 +14,12 @@ import {
 import { Card, Badge, Loading, Button } from "../../components/ui";
 import { getRestaurantStats } from "../../services/restaurantService";
 import { formatCurrency } from "../../utils/helpers";
+import { supabase } from "../../config/supabase";
+import { APP_CONFIG } from "../../config/config";
 
 const RestaurantHome: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
+  const [restaurant, setRestaurant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [user] = useState<any>(() => {
     const userData = localStorage.getItem("user");
@@ -25,22 +28,73 @@ const RestaurantHome: React.FC = () => {
 
   const restaurantType = user?.restaurant?.type || "Restaurant";
 
-  const loadStats = React.useCallback(async () => {
+  const loadData = React.useCallback(async () => {
     if (!user?.restaurant_id) return;
 
     try {
-      const data = await getRestaurantStats(user.restaurant_id);
-      setStats(data);
+      const [statsData, restData] = await Promise.all([
+        getRestaurantStats(user.restaurant_id),
+        supabase
+          .from("restaurants")
+          .select("*")
+          .eq("id", user.restaurant_id)
+          .single()
+      ]);
+      setStats(statsData);
+      setRestaurant(restData.data);
+      
+      // Update local storage session
+      if (restData.data) {
+        const updatedUser = { ...user, restaurant: { ...user.restaurant, subscription_plan: restData.data.subscription_plan } };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
     } catch (error) {
-      console.error("Failed to load stats", error);
+      console.error("Failed to load dashboard data", error);
     } finally {
       setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    loadStats();
-  }, [loadStats]);
+    loadData();
+
+    if (!user?.restaurant_id) return;
+
+    // Real-time subscription for dashboard metrics
+    const dashboardSubscription = supabase
+      .channel('dashboard-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `restaurant_id=eq.${user.restaurant_id}`,
+        },
+        () => {
+          console.log("Real-time update: Orders changed");
+          loadData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'menu_items',
+          filter: `restaurant_id=eq.${user.restaurant_id}`,
+        },
+        () => {
+          console.log("Real-time update: Menu changed");
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      dashboardSubscription.unsubscribe();
+    };
+  }, [loadData, user?.restaurant_id]);
 
   if (loading) {
     return (
@@ -53,11 +107,11 @@ const RestaurantHome: React.FC = () => {
   const statCards = [
     {
       title: "Today's Profit",
-      value: formatCurrency(stats?.todayRevenue || 0),
+      value: formatCurrency(stats?.revenueToday || 0),
       icon: IndianRupee,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
-      trend: "+12% vs yesterday",
+      trend: "Real-time Profit",
       trendColor: "text-emerald-600"
     },
     {
@@ -66,26 +120,26 @@ const RestaurantHome: React.FC = () => {
       icon: Clock,
       color: "text-amber-500",
       bgColor: "bg-amber-50",
-      trend: "4 orders in kitchen",
+      trend: "In Queue",
       trendColor: "text-amber-600"
     },
     {
-      title: "Total Orders",
-      value: stats?.todayOrders || 0,
+      title: "Completed Today",
+      value: stats?.completedToday || 0,
       icon: ShoppingBag,
       color: "text-slate-900",
       bgColor: "bg-slate-50",
-      trend: "Peak: 1:00 PM - 2:00 PM",
+      trend: "Total Success",
       trendColor: "text-slate-500"
     },
     {
-      title: "Menu Items",
+      title: "Menu Strength",
       value: stats?.totalMenuItems || 0,
       icon: UtensilsCrossed,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
-      trend: "5 out of stock",
-      trendColor: "text-red-500"
+      trend: "Total Items",
+      trendColor: "text-emerald-600"
     },
   ];
 
@@ -93,16 +147,28 @@ const RestaurantHome: React.FC = () => {
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-600/10 text-emerald-600 text-xs font-black uppercase tracking-widest mb-3">
-             <TrendingUp className="w-3 h-3" /> System Live
+        <div className="flex items-center gap-6">
+          {restaurant?.logo_url && (
+            <div className="w-20 h-20 rounded-[28px] overflow-hidden border-4 border-white shadow-2xl flex-shrink-0">
+               <img src={restaurant.logo_url} className="w-full h-full object-cover" alt="Branding" />
+            </div>
+          )}
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-600/10 text-emerald-600 text-xs font-black uppercase tracking-widest">
+                <TrendingUp className="w-3 h-3" /> System Live
+              </div>
+              <Badge variant="neutral" className="bg-slate-900 text-white border-none font-black text-[10px] uppercase tracking-widest px-3 py-1">
+                {APP_CONFIG.plans[restaurant?.subscription_plan as keyof typeof APP_CONFIG.plans]?.name || "Starter Pack"}
+              </Badge>
+            </div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+              {restaurant?.name || "Performance Overview"}
+            </h1>
+            <p className="text-slate-500 font-medium text-lg mt-1">
+              Welcome back. Here is your real-time performance data.
+            </p>
           </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-            Performance Overview
-          </h1>
-          <p className="text-slate-500 font-medium text-lg mt-1">
-            Welcome back, <span className="text-slate-900 font-bold">{user?.name || "Partner"}</span>. Here is how your {restaurantType.toLowerCase()} is performing today.
-          </p>
         </div>
         <div className="flex items-center gap-3">
            <Link to="/restaurant/menu">
@@ -202,22 +268,22 @@ const RestaurantHome: React.FC = () => {
 
         {/* Quick Insights / Help */}
         <div className="space-y-8">
-           <Card className="bg-slate-900 text-white border-none shadow-2xl shadow-emerald-600/10 p-8">
+           <Card className="bg-slate-900 border-none shadow-2xl shadow-emerald-600/10 p-8">
               <div className="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-600/20">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-black mb-4 tracking-tight">Boost Your Sales</h3>
+              <h3 className="text-xl font-black mb-4 tracking-tight text-white italic underline decoration-emerald-500/30 underline-offset-8">Boost Your Sales</h3>
               <p className="text-slate-400 font-medium mb-8 leading-relaxed text-sm">
                 Adding high-quality photos to your menu items can increase order volume by up to <span className="text-emerald-400 font-black">25%</span>.
               </p>
               <Link to="/restaurant/menu">
-                <Button variant="secondary" fullWidth className="bg-white text-slate-900 hover:bg-slate-100 border-none font-black uppercase tracking-widest text-xs py-4">
+                <Button variant="outline" fullWidth className="bg-white/5 border-white/10 text-white hover:bg-white hover:text-slate-900 transition-all font-black uppercase tracking-widest text-[10px] py-4">
                   Improve My Menu
                 </Button>
               </Link>
            </Card>
 
-           <Card className="border-2 border-slate-100 p-8">
+           <Card className="border-2 border-slate-100 p-8 bg-white">
               <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-emerald-600" /> Need Assistance?
               </h3>

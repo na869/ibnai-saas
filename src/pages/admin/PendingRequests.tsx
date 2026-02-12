@@ -23,11 +23,11 @@ import {
 } from "../../components/ui";
 import {
   subscribeToPendingRequests,
-  createRestaurantAccount,
+  approveRequest,
   rejectRegistrationRequest,
 } from "../../services/adminService";
 import type { RegistrationRequest } from "../../config/supabase";
-import { formatDateTime, copyToClipboard } from "../../utils/helpers";
+import { formatDateTime, copyToClipboard, generateTempPassword } from "../../utils/helpers";
 import { APP_CONFIG } from "../../config/config";
 
 const PendingRequests: React.FC = () => {
@@ -165,18 +165,38 @@ const PendingRequests: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Additional Info */}
-                  {(request.heard_from || request.notes) && (
-                    <div className="bg-bg-subtle rounded-lg p-3 space-y-2 text-sm">
-                      {request.heard_from && (
-                        <p className="text-text-secondary">
-                          <strong className="text-text">Heard from:</strong>{" "}
-                          {request.heard_from}
-                        </p>
+                  {/* Additional Info / Payment Proof */}
+                  {(request.payment_proof_url || request.notes) && (
+                    <div className="bg-bg-subtle rounded-xl p-4 space-y-4">
+                      {request.requested_plan && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Requested Plan:</span>
+                          <Badge variant="success" className="font-black uppercase text-[10px]">
+                            {APP_CONFIG.plans[request.requested_plan as keyof typeof APP_CONFIG.plans]?.name || request.requested_plan}
+                          </Badge>
+                        </div>
                       )}
+                      
+                      {request.payment_proof_url && (
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Payment Settlement Proof:</p>
+                          <div className="relative group w-48 h-48 rounded-xl overflow-hidden border-2 border-slate-200">
+                            <img 
+                              src={request.payment_proof_url} 
+                              alt="Payment Proof" 
+                              className="w-full h-full object-cover cursor-zoom-in"
+                              onClick={() => window.open(request.payment_proof_url, '_blank')}
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                               <p className="text-white text-[10px] font-black uppercase tracking-widest">View Full Size</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {request.notes && (
-                        <p className="text-text-secondary">
-                          <strong className="text-text">Notes:</strong>{" "}
+                        <p className="text-text-secondary text-sm">
+                          <strong className="text-text">Internal Notes:</strong>{" "}
                           {request.notes}
                         </p>
                       )}
@@ -267,7 +287,7 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     email: "",
-    subscriptionPlan: "free_trial",
+    subscriptionPlan: "starter_pack",
     internalNotes: "",
     sendViaSMS: true,
     sendViaWhatsApp: true,
@@ -279,6 +299,7 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       setFormData((prev) => ({
         ...prev,
         email: request.email || "",
+        subscriptionPlan: (request as any).requested_plan || "starter_pack"
       }));
     }
   }, [request, isOpen]);
@@ -287,26 +308,35 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     e.preventDefault();
     setError("");
 
-    if (!formData.email) {
-      setError("Email is required");
-      return;
-    }
-
     if (!request) return;
 
     setLoading(true);
-    const result = await createRestaurantAccount(request.id, {
-      email: formData.email,
+    
+    // For new accounts, we generate a temp password if they don't have one 
+    // (though in current flow they usually create it on the landing page)
+    const tempPass = generateTempPassword();
+
+    const result = await approveRequest(request.id, {
       subscriptionPlan: formData.subscriptionPlan,
+      password: request.status === 'pending' ? tempPass : undefined,
       internalNotes: formData.internalNotes,
     });
 
     setLoading(false);
 
-    if (result.success && result.credentials) {
-      onSuccess(result.credentials);
+    if (result.success) {
+      if (result.isUpgrade) {
+        alert("Upgrade successfully activated!");
+        onSuccess(null); // No credentials needed for upgrade
+      } else {
+        onSuccess({
+          email: request.email,
+          password: result.credentials?.password,
+          loginUrl: `${window.location.origin}/login`
+        });
+      }
     } else {
-      setError(result.error || "Failed to create account");
+      setError(result.error || "Failed to process request");
     }
   };
 

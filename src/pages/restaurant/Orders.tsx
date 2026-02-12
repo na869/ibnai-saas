@@ -10,11 +10,9 @@ import {
   Printer,
   ChefHat,
   CreditCard,
-  ChevronRight,
   Filter,
-  ArrowRight,
-  TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Utensils
 } from "lucide-react";
 import {
   Card,
@@ -28,7 +26,7 @@ import {
   updateOrderStatus,
 } from "../../services/restaurantService";
 import type { Order } from "../../config/supabase";
-import { formatDateTime, formatCurrency, playSound } from "../../utils/helpers";
+import { formatCurrency, playSound } from "../../utils/helpers";
 import { supabase } from "../../config/supabase";
 
 const Orders: React.FC = () => {
@@ -93,8 +91,16 @@ const Orders: React.FC = () => {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
 
-  const handleStatusUpdate = async (orderId: string, newStatus: Order["status"], paymentData?: any) => {
-    const success = await updateOrderStatus(orderId, newStatus, paymentData);
+  const handleStatusUpdate = async (orderId: string, newStatus: Order["status"], extraData?: any) => {
+    let internalNotes = extraData?.internalNotes || "";
+    
+    if (newStatus === "rejected") {
+      const reason = prompt("Please enter a reason for rejection:");
+      if (reason === null) return; // Cancelled prompt
+      internalNotes = reason;
+    }
+
+    const success = await updateOrderStatus(orderId, newStatus, { ...extraData, internalNotes });
     if (!success) {
       alert("Failed to update status");
     }
@@ -117,13 +123,13 @@ const Orders: React.FC = () => {
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       {/* Real-time notification toast */}
       {notification && (
-        <div className="fixed bottom-10 right-10 z-[60] animate-in slide-in-from-right-full">
-           <Card className="bg-slate-900 border-emerald-500/50 border-2 shadow-2xl p-6 flex items-center gap-6">
-              <div className="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center animate-bounce">
+        <div className="fixed bottom-10 right-10 z-[60] animate-in slide-in-from-right-full duration-500">
+           <Card className="bg-slate-900/90 backdrop-blur-xl border border-emerald-500/30 shadow-2xl p-6 flex items-center gap-6 rounded-[24px]">
+              <div className="w-14 h-14 bg-emerald-600 rounded-2xl flex items-center justify-center animate-bounce shadow-lg shadow-emerald-600/40">
                 <Bell className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="text-emerald-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Live POS Alert</p>
+                <p className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Live POS Alert</p>
                 <p className="text-white font-black text-xl tracking-tight">{notification}</p>
               </div>
            </Card>
@@ -131,49 +137,55 @@ const Orders: React.FC = () => {
       )}
 
       {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
         <div>
           <div className="flex items-center gap-3 mb-3">
-             <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-             <p className="text-emerald-600 font-black text-xs uppercase tracking-widest">Live Kitchen Connection Active</p>
+             <div className="relative">
+               <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping absolute inset-0 opacity-75"></div>
+               <div className="w-3 h-3 bg-emerald-500 rounded-full relative shadow-[0_0_15px_rgba(16,185,129,0.6)]"></div>
+             </div>
+             <p className="text-emerald-600 font-black text-xs uppercase tracking-[0.2em]">Live Kitchen Connection</p>
           </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Order Management</h1>
-          <p className="text-slate-500 font-medium mt-1">Accept, track, and complete orders in real-time.</p>
+          <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-2">Order Management</h1>
+          <p className="text-slate-500 font-medium text-lg">Accept, track, and complete orders in real-time.</p>
         </div>
         
         <div className="flex items-center gap-4">
            {pendingCount > 0 && (
-             <div className="bg-red-50 text-red-600 px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-3 border border-red-100 shadow-lg shadow-red-500/5">
-                <div className="w-2 h-2 bg-red-600 rounded-full animate-ping"></div>
-                {pendingCount} NEW ORDERS AWAITING
+             <div className="bg-red-50 text-red-600 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 border-2 border-red-100 shadow-xl shadow-red-500/10 animate-pulse">
+                <div className="w-2 h-2 bg-red-600 rounded-full"></div>
+                {pendingCount} Pending Action
              </div>
            )}
-           <Button variant="outline" icon={<Printer className="w-4 h-4" />}>Batch Print</Button>
+           <Button variant="outline" icon={<Printer className="w-4 h-4" />} className="h-14 rounded-2xl font-black text-xs uppercase tracking-widest border-slate-200 hover:border-slate-300">
+             Batch Print
+           </Button>
         </div>
       </div>
 
-      {/* Modern Filter Tabs */}
-      <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar">
+      {/* Filter Tabs */}
+      <div className="flex overflow-x-auto gap-4 pb-2 no-scrollbar">
         {[
           { id: "all", label: "All Activity", icon: Filter },
-          { id: "pending", label: "Incoming", icon: Bell, color: "text-red-500" },
-          { id: "preparing", label: "In Kitchen", icon: ChefHat, color: "text-amber-500" },
-          { id: "ready", label: "Ready", icon: CheckCircle, color: "text-emerald-500" },
-          { id: "completed", label: "History", icon: Package, color: "text-slate-400" }
+          { id: "pending", label: "Incoming", icon: Bell, color: "text-red-500", countBg: "bg-red-50 text-red-600" },
+          { id: "preparing", label: "In Kitchen", icon: ChefHat, color: "text-amber-500", countBg: "bg-amber-50 text-amber-600" },
+          { id: "ready", label: "Ready", icon: CheckCircle, color: "text-emerald-500", countBg: "bg-emerald-50 text-emerald-600" },
+          { id: "completed", label: "History", icon: Package, color: "text-slate-400", countBg: "bg-slate-100 text-slate-500" },
+          { id: "rejected", label: "Rejected", icon: XCircle, color: "text-red-400", countBg: "bg-red-50 text-red-500" }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setStatusFilter(tab.id)}
             className={`
-              flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap border-2
+              flex items-center gap-3 px-6 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap border-2 group
               ${statusFilter === tab.id 
-                ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-200" 
-                : "bg-white text-slate-400 border-slate-100 hover:border-slate-300 hover:text-slate-600"}
+                ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20 scale-105" 
+                : "bg-white text-slate-400 border-slate-100 hover:border-slate-200 hover:text-slate-600"}
             `}
           >
             <tab.icon className={`w-4 h-4 ${statusFilter === tab.id ? 'text-emerald-400' : tab.color}`} />
             {tab.label}
-            <span className={`px-2 py-0.5 rounded-lg text-[10px] ${statusFilter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-50 text-slate-400'}`}>
+            <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black ${statusFilter === tab.id ? 'bg-white/20 text-white' : (tab.countBg || 'bg-slate-50')}`}>
               {orders.filter(o => o.status === tab.id || tab.id === "all").length}
             </span>
           </button>
@@ -182,52 +194,60 @@ const Orders: React.FC = () => {
 
       {/* Order Grid */}
       {filteredOrders.length === 0 ? (
-        <Card className="text-center py-32 border-none shadow-inner bg-slate-50/50">
-           <div className="w-20 h-20 bg-white rounded-3xl shadow-lg mx-auto mb-6 flex items-center justify-center text-slate-200">
+        <div className="flex flex-col items-center justify-center py-40 text-center bg-white rounded-[40px] border-2 border-dashed border-slate-100">
+           <div className="w-24 h-24 bg-slate-50 rounded-[32px] mb-8 flex items-center justify-center text-slate-300">
               <Package className="w-10 h-10" />
            </div>
-           <h3 className="text-xl font-black text-slate-900 mb-2 tracking-tight">Everything is up to date</h3>
-           <p className="text-slate-400 font-medium">New orders will automatically appear here when they arrive.</p>
-        </Card>
+           <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Everything is quiet</h3>
+           <p className="text-slate-400 font-medium max-w-xs mx-auto">New orders will automatically appear here when they arrive.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {filteredOrders.map((order) => (
             <Card
               key={order.id}
-              hover
-              className={`flex flex-col h-full border-none shadow-xl shadow-slate-200/50 overflow-hidden group ${
-                order.status === "pending" ? "ring-2 ring-red-500 ring-offset-4 ring-offset-slate-50" : ""
+              className={`flex flex-col h-full border-none shadow-xl shadow-slate-200/40 overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-900/10 ${
+                order.status === "pending" ? "ring-4 ring-red-500/20" : ""
               }`}
+              noPadding
             >
-              {/* Card Ribbon for urgency */}
-              {order.status === "pending" && (
-                <div className="bg-red-500 text-white text-[10px] font-black uppercase tracking-widest text-center py-1.5 animate-pulse">
-                  Urgent Action Required
-                </div>
-              )}
+              {/* Status Header */}
+              <div className={`p-1.5 ${
+                order.status === "pending" ? "bg-red-500" : 
+                order.status === "preparing" ? "bg-amber-500" : 
+                order.status === "ready" ? "bg-emerald-500" : 
+                "bg-slate-100"
+              }`}>
+                {order.status === "pending" && (
+                  <div className="text-white text-[10px] font-black uppercase tracking-widest text-center py-1 flex items-center justify-center gap-2 animate-pulse">
+                    <Clock className="w-3 h-3" /> Action Required
+                  </div>
+                )}
+              </div>
 
               <div className="p-8 flex-1 flex flex-col">
-                <div className="flex justify-between items-start mb-6">
+                <div className="flex justify-between items-start mb-8">
                   <div>
-                    <h3 className="text-3xl font-black text-slate-900 tracking-tighter leading-none mb-1">
+                    <h3 className="text-4xl font-black text-slate-900 tracking-tighter leading-none mb-2">
                       #{order.order_number.toString().slice(-4)}
                     </h3>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                        <Clock className="w-3 h-3 text-emerald-600" /> {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
-                  <Badge 
-                    variant={order.status === "pending" ? "error" : order.status === "preparing" ? "warning" : "success"}
-                    className="font-black uppercase tracking-widest text-[10px] py-1.5 px-3 rounded-xl"
-                  >
-                    {order.status === "pending" ? "New" : order.status === "preparing" ? "Kitchen" : order.status}
-                  </Badge>
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 ${
+                    order.order_type === 'takeaway' 
+                      ? 'bg-amber-50 border-amber-100 text-amber-600' 
+                      : 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                  }`}>
+                    {order.order_type === 'takeaway' ? <Package className="w-6 h-6" /> : <Utensils className="w-6 h-6" />}
+                  </div>
                 </div>
 
                 {/* Customer Info */}
-                <div className="flex items-center justify-between mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                   <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-black text-slate-400">
+                <div className="flex items-center justify-between mb-8 p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                   <div className="flex items-center gap-4">
+                     <div className="w-10 h-10 rounded-xl bg-white border-2 border-slate-100 flex items-center justify-center font-black text-slate-400 shadow-sm">
                         {order.customer_name?.charAt(0) || "G"}
                      </div>
                      <div>
@@ -236,95 +256,121 @@ const Orders: React.FC = () => {
                      </div>
                    </div>
                    <div className="text-right">
-                     <p className="font-black text-emerald-600 text-sm leading-none mb-1">TABLE {order.table_number || "NA"}</p>
-                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{order.order_type}</p>
+                     <p className={`font-black text-sm leading-none mb-1 uppercase ${order.order_type === 'takeaway' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                        {order.order_type === 'takeaway' ? 'Takeaway' : `Table ${order.table_number || "NA"}`}
+                     </p>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type</p>
                    </div>
                 </div>
 
                 {/* Item List */}
-                <div className="space-y-3 mb-8 flex-1">
+                <div className="space-y-4 mb-8 flex-1">
                   {order.items?.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between items-center group/item">
-                       <div className="flex items-center gap-3">
-                          <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-900">
+                    <div key={idx} className="flex justify-between items-center group/item border-b border-dashed border-slate-100 pb-2 last:border-0 last:pb-0">
+                       <div className="flex items-center gap-4">
+                          <span className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-xs font-black text-white shadow-lg shadow-slate-900/20">
                             {item.quantity}
                           </span>
                           <span className="text-sm font-bold text-slate-700 group-hover/item:text-slate-900 transition-colors uppercase tracking-tight">
                             {item.name}
                           </span>
                        </div>
-                       <span className="text-xs font-black text-slate-400">₹{item.item_total}</span>
+                       <span className="text-xs font-black text-slate-900">₹{item.item_total}</span>
                     </div>
                   ))}
                 </div>
 
                 {order.customer_notes && (
-                  <div className="mb-8 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3">
+                  <div className="mb-8 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3 shadow-inner">
                      <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
                      <p className="text-xs text-amber-900 font-bold leading-relaxed italic">"{order.customer_notes}"</p>
+                  </div>
+                )}
+                
+                {order.status === "rejected" && order.internal_notes && (
+                  <div className="mb-8 p-4 bg-red-50 rounded-2xl border border-red-100 flex gap-3 shadow-inner">
+                     <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                     <p className="text-xs text-red-900 font-bold leading-relaxed">Reason: "{order.internal_notes}"</p>
                   </div>
                 )}
 
                 {/* Footer Actions */}
                 <div className="mt-auto space-y-6">
-                  <div className="flex justify-between items-end border-t border-slate-100 pt-6">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Total Revenue</span>
-                    <span className="text-3xl font-black text-slate-900 tracking-tighter">{formatCurrency(order.total)}</span>
+                  <div className="flex justify-between items-end border-t-2 border-slate-100 pt-6">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Total</span>
+                    <span className="text-4xl font-black text-slate-900 tracking-tighter">{formatCurrency(order.total)}</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      variant="outline"
-                      className="rounded-2xl border-slate-100 font-black uppercase text-[10px] tracking-widest h-14"
-                      onClick={() => handleViewBill(order)}
-                    >
-                      <Printer className="w-4 h-4 mr-2" /> Invoice
-                    </Button>
-                    
+                  <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        variant="outline"
+                        className="rounded-2xl border-2 border-slate-100 font-black uppercase text-[10px] tracking-widest h-14 hover:border-slate-300 hover:bg-slate-50"
+                        onClick={() => handleViewBill(order)}
+                      >
+                        <Printer className="w-4 h-4 mr-2" /> Bill
+                      </Button>
+                      
+                      {order.status === "pending" && (
+                        <Button
+                          className="rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-600/20 bg-emerald-600 hover:bg-emerald-700 text-white"
+                          onClick={() => handleStatusUpdate(order.id, "preparing")}
+                          icon={<ChefHat className="w-4 h-4" />}
+                        >
+                          Accept
+                        </Button>
+                      )}
+
+                      {order.status === "preparing" && (
+                        <Button
+                          className="rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-amber-600/20 bg-amber-500 hover:bg-amber-600 text-white"
+                          onClick={() => handleStatusUpdate(order.id, "ready")}
+                          icon={<CheckCircle className="w-4 h-4" />}
+                        >
+                          Ready
+                        </Button>
+                      )}
+
+                      {order.status === "ready" && (
+                        <Button
+                          className="rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-600/20 bg-emerald-600 hover:bg-emerald-700 text-white"
+                          onClick={() => handleStatusUpdate(order.id, "completed")}
+                          icon={<Package className="w-4 h-4" />}
+                        >
+                          Deliver
+                        </Button>
+                      )}
+
+                      {order.status === "completed" && order.payment_status !== "paid" && (
+                        <Button
+                          className="rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20"
+                          onClick={() => handleStatusUpdate(order.id, "completed", { paymentStatus: "paid", paymentMethod: "Cash" })}
+                          icon={<CreditCard className="w-4 h-4" />}
+                        >
+                          Pay
+                        </Button>
+                      )}
+                    </div>
+
                     {order.status === "pending" && (
                       <Button
-                        className="rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-600/20"
-                        onClick={() => handleStatusUpdate(order.id, "preparing")}
-                        icon={<ChefHat className="w-4 h-4" />}
+                        variant="ghost"
+                        className="rounded-2xl h-12 font-black uppercase text-[10px] tracking-widest text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        onClick={() => handleStatusUpdate(order.id, "rejected")}
+                        icon={<XCircle className="w-4 h-4" />}
                       >
-                        Accept
-                      </Button>
-                    )}
-
-                    {order.status === "preparing" && (
-                      <Button
-                        className="rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-amber-600/20 bg-amber-500 hover:bg-amber-600"
-                        onClick={() => handleStatusUpdate(order.id, "ready")}
-                        icon={<CheckCircle className="w-4 h-4" />}
-                      >
-                        Set Ready
-                      </Button>
-                    )}
-
-                    {order.status === "ready" && (
-                      <Button
-                        className="rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-600/20"
-                        onClick={() => handleStatusUpdate(order.id, "completed")}
-                        icon={<Package className="w-4 h-4" />}
-                      >
-                        Deliver
-                      </Button>
-                    )}
-
-                    {order.status === "completed" && order.payment_status !== "paid" && (
-                      <Button
-                        variant="secondary"
-                        className="rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest"
-                        onClick={() => handleStatusUpdate(order.id, "completed", { paymentStatus: "paid", paymentMethod: "Cash" })}
-                        icon={<CreditCard className="w-4 h-4" />}
-                      >
-                        Payment
+                        Reject Order
                       </Button>
                     )}
 
                     {(order.status === "completed" && order.payment_status === "paid") && (
-                      <div className="col-span-1 bg-emerald-50 rounded-2xl h-14 flex items-center justify-center text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-                        Fulfilled
+                      <div className="w-full bg-emerald-50 rounded-2xl h-14 flex items-center justify-center text-[10px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100">
+                        <CheckCircle className="w-4 h-4 mr-2" /> Fulfilled & Paid
+                      </div>
+                    )}
+                    {order.status === "rejected" && (
+                      <div className="w-full bg-red-50 rounded-2xl h-14 flex items-center justify-center text-[10px] font-black text-red-600 uppercase tracking-widest border border-red-100">
+                        <XCircle className="w-4 h-4 mr-2" /> Rejected
                       </div>
                     )}
                   </div>
@@ -357,37 +403,37 @@ const BillModal: React.FC<{ isOpen: boolean; order: Order | null; restaurant: an
       <div className="bg-white p-8 space-y-10">
         <div id="printable-bill" className="font-mono text-slate-900 border-2 border-slate-100 p-8 rounded-[32px] bg-slate-50/50">
           {/* Header */}
-          <div className="text-center pb-8 border-b border-dashed border-slate-300">
-            <h2 className="text-2xl font-black uppercase tracking-tighter mb-2">{restaurant?.name || "IBNAI PARTNER"}</h2>
+          <div className="text-center pb-8 border-b-2 border-dashed border-slate-300">
+            <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">{restaurant?.name || "IBNAI PARTNER"}</h2>
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{restaurant?.address || "Operational Location Unset"}</p>
-            <p className="text-[10px] font-black text-slate-900 mt-2">GSTIN: {restaurant?.gstin || "NOT PROVIDED"}</p>
+            <p className="text-[10px] font-black text-slate-900 mt-2 bg-slate-200 inline-block px-2 py-1 rounded">GSTIN: {restaurant?.gstin || "NOT PROVIDED"}</p>
           </div>
 
           {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-4 py-8 text-[10px] font-black uppercase tracking-widest border-b border-dashed border-slate-300">
+          <div className="grid grid-cols-2 gap-4 py-8 text-[10px] font-black uppercase tracking-widest border-b-2 border-dashed border-slate-300">
             <div>
               <p className="text-slate-400 mb-1">Invoice ID</p>
-              <p className="text-slate-900">#ORD-{order.order_number.toString().slice(-6)}</p>
+              <p className="text-slate-900 text-sm">#ORD-{order.order_number.toString().slice(-4)}</p>
               <p className="mt-4 text-slate-400 mb-1">Service Type</p>
-              <p className="text-slate-900">{order.order_type}</p>
+              <p className="text-slate-900 text-sm">{order.order_type}</p>
             </div>
             <div className="text-right">
               <p className="text-slate-400 mb-1">Issue Date</p>
-              <p className="text-slate-900">{new Date(order.created_at).toLocaleDateString()}</p>
-              <p className="mt-4 text-slate-400 mb-1">Table Reference</p>
-              <p className="text-slate-900">T-{order.table_number || "NA"}</p>
+              <p className="text-slate-900 text-sm">{new Date(order.created_at).toLocaleDateString()}</p>
+              <p className="mt-4 text-slate-400 mb-1">Reference</p>
+              <p className="text-slate-900 text-sm">T-{order.table_number || "NA"}</p>
             </div>
           </div>
 
           {/* Line Items */}
           <div className="py-8 space-y-4">
-             <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest pb-2">
+             <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-200">
                <span>Item Detail</span>
                <span>Price</span>
              </div>
              {order.items?.map((item: any, idx: number) => (
                <div key={idx} className="flex justify-between items-start text-xs font-bold">
-                 <span className="uppercase max-w-[70%]">{item.quantity}x {item.name}</span>
+                 <span className="uppercase max-w-[70%] leading-relaxed">{item.quantity} x {item.name}</span>
                  <span className="text-slate-900">₹{Number(item.item_total).toFixed(2)}</span>
                </div>
              ))}
@@ -403,20 +449,20 @@ const BillModal: React.FC<{ isOpen: boolean; order: Order | null; restaurant: an
                <span className="uppercase tracking-widest">Tax (GST 5%)</span>
                <span>₹{Number(order.tax).toFixed(2)}</span>
              </div>
-             <div className="flex justify-between text-2xl font-black text-slate-900 pt-4 tracking-tighter">
-               <span className="uppercase">Grand Total</span>
+             <div className="flex justify-between text-3xl font-black text-slate-900 pt-4 tracking-tighter">
+               <span className="uppercase">Total</span>
                <span>₹{Number(order.total).toFixed(2)}</span>
              </div>
           </div>
 
           <div className="mt-12 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">
-             Thank you for choosing {restaurant?.name}.
+             Thank you for dining with us.
           </div>
         </div>
 
         <div className="flex gap-4 no-print pt-4">
-           <Button variant="outline" fullWidth onClick={onClose} className="h-16 rounded-2xl font-black uppercase tracking-widest text-xs">Dismiss</Button>
-           <Button fullWidth onClick={() => window.print()} className="h-16 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-emerald-600/20" icon={<Printer className="w-5 h-5" />}>Print Invoice</Button>
+           <Button variant="outline" fullWidth onClick={onClose} className="h-16 rounded-2xl font-black uppercase tracking-widest text-xs border-slate-200">Dismiss</Button>
+           <Button fullWidth onClick={() => window.print()} className="h-16 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-900/20 bg-slate-900 text-white hover:bg-black" icon={<Printer className="w-5 h-5" />}>Print Invoice</Button>
         </div>
       </div>
       

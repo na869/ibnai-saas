@@ -197,3 +197,29 @@ export const playSound = (
 ) => {
   playNotificationSound();
 };
+
+/**
+ * Get subscription plan limits
+ */
+export const getPlanLimits = (planId: string) => {
+  const plans = APP_CONFIG.plans as any;
+  const plan = plans[planId] || plans.starter_pack;
+  return plan.limits;
+};
+
+/**
+ * Check if a plan has a specific feature
+ */
+export const hasFeature = (planId: string | undefined, feature: string): boolean => {
+  if (!planId) return false;
+  const limits = getPlanLimits(planId);
+  return !!limits[feature];
+};
+
+/**
+ * Get menu item limit for a plan
+ */
+export const getMenuItemLimit = (planId: string | undefined): number => {
+  if (!planId) return APP_CONFIG.plans.starter_pack.limits.maxItems;
+  return getPlanLimits(planId).maxItems;
+};

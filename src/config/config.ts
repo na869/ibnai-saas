@@ -14,32 +14,76 @@ export const APP_CONFIG = {
   taxRate: 0.05, // 5% GST
   orderPrefix: "ORD",
 
+  // Platform Owner Payment Details (Where restaurants pay YOU)
+  adminPayment: {
+    upiId: "shaik-naseer@ptyes", // Replace with your actual UPI ID
+    bankName: "Punjab National Bank",
+    accountHolder: "shaik naseer",
+    qrImageUrl: "https://mnqnsegcldgwdrhramtf.supabase.co/storage/v1/object/public/assets/admin-upi-qr.png" 
+  },
+
   // Subscription plans
   plans: {
-    starter: {
-      name: "Starter",
+    starter_pack: {
+      id: "starter_pack",
+      name: "Starter Pack",
       price: 0,
-      duration: "per month",
+      duration: "Free",
       features: [
-        "Free for first 50 Restaurants",
-        "Unlimited QR orders",
-        "Basic menu management",
-        "Digital menu hosting",
-        "Email support",
+        "Up to 20 Menu Items",
+        "Basic QR Menu",
+        "Dine-in Orders Only",
+        "Standard Branding",
+        "Email Support",
       ],
+      limits: {
+        maxItems: 20,
+        customBranding: false,
+        analytics: false,
+        takeaway: false,
+        upi: false,
+      }
     },
-    pro: {
-      name: "Pro",
-      price: 499,
+    growth_pack: {
+      id: "growth_pack",
+      name: "Growth Pack",
+      price: 999,
       duration: "per month",
       features: [
-        "Complete Control",
-        "Unlimited locations",
-        "Advanced analytics",
-        "Custom branding",
-        "Priority support",
-        "Inventory management",
+        "Unlimited Menu Items",
+        "Dine-in & Takeaway",
+        "Custom Logo & Cover",
+        "Basic Analytics",
+        "Priority Email Support",
       ],
+      limits: {
+        maxItems: 1000000,
+        customBranding: true,
+        analytics: true,
+        takeaway: true,
+        upi: false,
+      }
+    },
+    customizeble_pack: {
+      id: "customizeble_pack",
+      name: "Customizable Pack",
+      price: 2499,
+      duration: "per month",
+      features: [
+        "Everything in Growth",
+        "Custom Domain (Optional)",
+        "Advanced Analytics",
+        "UPI Integration",
+        "Dedicated Account Manager",
+        "Custom CSS/Branding",
+      ],
+      limits: {
+        maxItems: 1000000,
+        customBranding: true,
+        analytics: true,
+        takeaway: true,
+        upi: true,
+      }
     },
   },
 
