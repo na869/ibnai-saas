@@ -52,6 +52,7 @@ const RegisterPage: React.FC = () => {
     }
 
     if (step === 3) {
+      if (!formData.restaurantName || !formData.phone || !formData.city) return;
       if (planId !== 'starter_pack' && !paymentProof) {
         setStep(4);
         return;
@@ -83,8 +84,37 @@ const RegisterPage: React.FC = () => {
       if (error) throw error;
 
       if (planId === 'starter_pack') {
-        // Auto-login success logic
-        navigate('/restaurant');
+        if (data.session) {
+          // If auto-login is enabled in Supabase (email confirmation disabled)
+          // Fetch the newly created restaurant (created by trigger)
+          const { data: restaurant, error: restError } = await supabase
+            .from('restaurants')
+            .select('*')
+            .eq('id', data.user!.id)
+            .single();
+
+          if (!restError && restaurant) {
+            const sessionUser = {
+              id: data.user!.id,
+              email: data.user!.email,
+              name: restaurant.name,
+              restaurant_id: restaurant.id,
+              restaurant: {
+                name: restaurant.name,
+                slug: restaurant.slug,
+                type: restaurant.restaurant_type,
+                subscription_plan: restaurant.subscription_plan
+              }
+            };
+            localStorage.setItem('user', JSON.stringify(sessionUser));
+            navigate('/restaurant');
+            return;
+          }
+        }
+        
+        // If email confirmation is required or auto-login failed
+        alert("Registration successful! Please check your email to confirm your account, then you can login.");
+        navigate('/login');
       } else {
         // Paid plans wait for approval
         setIsPending(true);
@@ -162,7 +192,15 @@ const RegisterPage: React.FC = () => {
 
       {/* Right Side - Wizard */}
       <div className="flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12 relative bg-slate-50">
-         <div className="max-w-md w-full mx-auto">
+         <div className="max-w-md w-full mx-auto relative">
+           {/* Plan Badge - Fixed at top right of container */}
+           <div className="absolute -top-12 right-0 flex items-center gap-2">
+             <Badge variant="neutral" className="bg-emerald-600 text-white border-none font-black text-[10px] uppercase tracking-[0.2em] px-4 py-2 shadow-lg shadow-emerald-600/20">
+               {selectedPlan.name}
+             </Badge>
+             {planId === 'customizeble_pack' && <ShieldCheck className="w-5 h-5 text-emerald-600" />}
+           </div>
+
            {/* Progress Bar */}
            <div className="mb-10">
              <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">
@@ -178,12 +216,6 @@ const RegisterPage: React.FC = () => {
            </div>
 
            <div className="mb-8">
-             <div className="flex items-center gap-2 mb-2">
-               <Badge variant="neutral" className="bg-emerald-600 text-white border-none font-black text-[9px] uppercase tracking-[0.2em] px-3 py-1">
-                 Selected: {selectedPlan.name}
-               </Badge>
-               {planId === 'customizeble_pack' && <ShieldCheck className="w-4 h-4 text-emerald-600" />}
-             </div>
              <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">
                {step === 1 ? 'Founder Identity' : step === 2 ? 'Select Business Type' : step === 3 ? 'Restaurant Details' : 'Secure Ecosystem'}
              </h1>
