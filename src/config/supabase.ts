@@ -69,13 +69,12 @@ export interface Restaurant {
   updated_at: string;
 }
 
-export interface User {
+export interface Profile {
   id: string;
   restaurant_id?: string;
   email: string;
-  password_hash: string;
-  temp_password: boolean;
-  role: "owner" | "staff";
+  role: "admin" | "owner" | "staff";
+  full_name?: string;
   created_at: string;
 }
 
@@ -139,12 +138,4 @@ export interface OrderItem {
   selected_addons?: { name: string; price: number }[];
   item_total: number;
   special_instructions?: string;
-}
-
-export interface AdminUser {
-  id: string;
-  email: string;
-  password_hash: string;
-  name?: string;
-  created_at: string;
 }

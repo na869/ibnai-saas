@@ -27,7 +27,7 @@ import {
   rejectRegistrationRequest,
 } from "../../services/adminService";
 import type { RegistrationRequest } from "../../config/supabase";
-import { formatDateTime, copyToClipboard, generateTempPassword } from "../../utils/helpers";
+import { formatDateTime } from "../../utils/helpers";
 import { APP_CONFIG } from "../../config/config";
 
 const PendingRequests: React.FC = () => {
@@ -35,10 +35,8 @@ const PendingRequests: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] =
     useState<RegistrationRequest | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
-  const [credentials, setCredentials] = useState<any>(null);
 
   // Real-time subscription
   useEffect(() => {
@@ -52,9 +50,9 @@ const PendingRequests: React.FC = () => {
     };
   }, []);
 
-  const handleCreateAccount = (request: RegistrationRequest) => {
+  const handleApprove = (request: RegistrationRequest) => {
     setSelectedRequest(request);
-    setShowCreateModal(true);
+    setShowApproveModal(true);
   };
 
   const handleReject = (request: RegistrationRequest) => {
@@ -211,7 +209,7 @@ const PendingRequests: React.FC = () => {
                     size="sm"
                     fullWidth
                     icon={<CheckCircle className="w-4 h-4" />}
-                    onClick={() => handleCreateAccount(request)}
+                    onClick={() => handleApprove(request)}
                   >
                     Approve
                   </Button>
@@ -231,18 +229,17 @@ const PendingRequests: React.FC = () => {
         </div>
       )}
 
-      {/* Create Account Modal */}
-      <CreateAccountModal
-        isOpen={showCreateModal}
+      {/* Approve Modal */}
+      <ApproveModal
+        isOpen={showApproveModal}
         request={selectedRequest}
         onClose={() => {
-          setShowCreateModal(false);
+          setShowApproveModal(false);
           setSelectedRequest(null);
         }}
-        onSuccess={(creds) => {
-          setShowCreateModal(false);
-          setCredentials(creds);
-          setShowCredentialsModal(true);
+        onSuccess={() => {
+          setShowApproveModal(false);
+          setSelectedRequest(null);
         }}
       />
 
@@ -255,29 +252,19 @@ const PendingRequests: React.FC = () => {
           setSelectedRequest(null);
         }}
       />
-
-      {/* Credentials Display Modal */}
-      <CredentialsModal
-        isOpen={showCredentialsModal}
-        credentials={credentials}
-        onClose={() => {
-          setShowCredentialsModal(false);
-          setCredentials(null);
-        }}
-      />
     </div>
   );
 };
 
-// Create Account Modal Component
-interface CreateAccountModalProps {
+// Approve Modal Component
+interface ApproveModalProps {
   isOpen: boolean;
   request: RegistrationRequest | null;
   onClose: () => void;
-  onSuccess: (credentials: any) => void;
+  onSuccess: () => void;
 }
 
-const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
+const ApproveModal: React.FC<ApproveModalProps> = ({
   isOpen,
   request,
   onClose,
@@ -286,19 +273,14 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    email: "",
     subscriptionPlan: "starter_pack",
     internalNotes: "",
-    sendViaSMS: true,
-    sendViaWhatsApp: true,
-    sendViaEmail: true,
   });
 
   useEffect(() => {
     if (request && isOpen) {
       setFormData((prev) => ({
         ...prev,
-        email: request.email || "",
         subscriptionPlan: (request as any).requested_plan || "starter_pack"
       }));
     }
@@ -312,29 +294,16 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
     setLoading(true);
     
-    // For new accounts, we generate a temp password if they don't have one 
-    // (though in current flow they usually create it on the landing page)
-    const tempPass = generateTempPassword();
-
     const result = await approveRequest(request.id, {
       subscriptionPlan: formData.subscriptionPlan,
-      password: request.status === 'pending' ? tempPass : undefined,
       internalNotes: formData.internalNotes,
     });
 
     setLoading(false);
 
     if (result.success) {
-      if (result.isUpgrade) {
-        alert("Upgrade successfully activated!");
-        onSuccess(null); // No credentials needed for upgrade
-      } else {
-        onSuccess({
-          email: request.email,
-          password: result.credentials?.password,
-          loginUrl: `${window.location.origin}/login`
-        });
-      }
+      alert("Restaurant activated successfully!");
+      onSuccess();
     } else {
       setError(result.error || "Failed to process request");
     }
@@ -346,7 +315,7 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create Restaurant Account"
+      title="Approve Restaurant Registration"
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -363,26 +332,10 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               <strong>Owner:</strong> {request.owner_name}
             </p>
             <p className="text-text-secondary">
-              <strong>Phone:</strong> {request.phone}
-            </p>
-            <p className="text-text-secondary">
-              <strong>City:</strong> {request.city}
-            </p>
-            <p className="text-text-secondary">
-              <strong>Type:</strong> {request.restaurant_type}
+              <strong>Email:</strong> {request.email}
             </p>
           </div>
         </div>
-
-        {/* Account Details */}
-        <Input
-          label="Email Address"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          placeholder="owner@restaurant.com"
-          required
-        />
 
         <Select
           label="Subscription Plan"
@@ -403,58 +356,14 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             setFormData({ ...formData, internalNotes: e.target.value })
           }
           placeholder="Add any internal notes..."
-          rows={2}
+          rows={3}
         />
-
-        {/* Send Credentials Via */}
-        <div>
-          <label className="label mb-3">Send Credentials Via</label>
-          <div className="space-y-2">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.sendViaSMS}
-                onChange={(e) =>
-                  setFormData({ ...formData, sendViaSMS: e.target.checked })
-                }
-                className="rounded border-border"
-              />
-              <span className="text-text">SMS</span>
-            </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.sendViaWhatsApp}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    sendViaWhatsApp: e.target.checked,
-                  })
-                }
-                className="rounded border-border"
-              />
-              <span className="text-text">WhatsApp</span>
-            </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.sendViaEmail}
-                onChange={(e) =>
-                  setFormData({ ...formData, sendViaEmail: e.target.checked })
-                }
-                className="rounded border-border"
-              />
-              <span className="text-text">Email</span>
-            </label>
-          </div>
-        </div>
 
         {/* Info */}
         <div className="bg-accent-secondary/10 border border-accent-secondary/20 rounded-lg p-3 text-sm">
           <AlertCircle className="w-4 h-4 text-accent-secondary inline mr-2" />
           <span className="text-text-secondary">
-            A temporary password will be generated and sent to the restaurant.
-            They can change it after first login.
+            Approving this request will grant the restaurant owner access to their dashboard.
           </span>
         </div>
 
@@ -464,7 +373,7 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
             Cancel
           </Button>
           <Button type="submit" loading={loading} fullWidth>
-            Create Account & Send Credentials
+            Approve & Activate
           </Button>
         </div>
       </form>
@@ -550,101 +459,6 @@ const RejectModal: React.FC<RejectModalProps> = ({
             Reject Registration
           </Button>
         </div>
-      </div>
-    </Modal>
-  );
-};
-
-// Credentials Display Modal
-interface CredentialsModalProps {
-  isOpen: boolean;
-  credentials: any;
-  onClose: () => void;
-}
-
-const CredentialsModal: React.FC<CredentialsModalProps> = ({
-  isOpen,
-  credentials,
-  onClose,
-}) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    const text = `Login Credentials:\n\nEmail: ${credentials?.email}\nPassword: ${credentials?.password}\nLogin URL: ${credentials?.loginUrl}`;
-    const success = await copyToClipboard(text);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  if (!credentials) return null;
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Account Created Successfully!"
-      size="md"
-    >
-      <div className="space-y-6">
-        {/* Success Message */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/10 mb-4">
-            <CheckCircle className="w-10 h-10 text-success" />
-          </div>
-          <p className="text-text-secondary">
-            Restaurant account has been created and credentials have been sent.
-          </p>
-        </div>
-
-        {/* Credentials */}
-        <div className="bg-bg-subtle rounded-lg p-4 space-y-3">
-          <h4 className="font-semibold text-text mb-3">Login Credentials</h4>
-          <div className="space-y-2">
-            <div>
-              <label className="text-xs text-text-secondary">Email</label>
-              <p className="font-mono text-text">{credentials.email}</p>
-            </div>
-            <div>
-              <label className="text-xs text-text-secondary">
-                Temporary Password
-              </label>
-              <p className="font-mono text-text font-bold">
-                {credentials.password}
-              </p>
-            </div>
-            <div>
-              <label className="text-xs text-text-secondary">Login URL</label>
-              <p className="font-mono text-text text-sm break-all">
-                {credentials.loginUrl}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Copy Button */}
-        <Button
-          variant="outline"
-          fullWidth
-          icon={<Copy className="w-4 h-4" />}
-          onClick={handleCopy}
-        >
-          {copied ? "Copied!" : "Copy All Credentials"}
-        </Button>
-
-        {/* Info */}
-        <div className="bg-accent-secondary/10 border border-accent-secondary/20 rounded-lg p-3 text-sm">
-          <AlertCircle className="w-4 h-4 text-accent-secondary inline mr-2" />
-          <span className="text-text-secondary">
-            These credentials have been sent to the restaurant via their
-            selected channels (SMS/WhatsApp/Email).
-          </span>
-        </div>
-
-        <Button onClick={onClose} fullWidth>
-          Done
-        </Button>
       </div>
     </Modal>
   );

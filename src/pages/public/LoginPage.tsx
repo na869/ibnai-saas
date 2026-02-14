@@ -27,14 +27,18 @@ const LoginPage: React.FC = () => {
 
       if (authError) throw authError;
 
-      // Fetch the restaurant profile linked to this user
-      const { data: restaurant, error: restError } = await supabase
-        .from('restaurants')
-        .select('*')
+      // Fetch the profile and restaurant linked to this user
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*, restaurants(*)')
         .eq('id', data.user.id)
         .single();
 
-      if (restError) throw new Error("Restaurant profile not found.");
+      if (profileError || !profile || !profile.restaurants) {
+        throw new Error("Restaurant profile not found.");
+      }
+
+      const restaurant = profile.restaurants;
 
       if (!restaurant.is_active) {
         // Log them back out if not active (Admin Gate)

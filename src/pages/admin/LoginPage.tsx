@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Shield, ArrowLeft, Mail, Lock, Zap } from "lucide-react";
 import { Button, Input, Alert, Card } from "../../components/ui";
 import { supabase } from "../../config/supabase";
-import { isValidEmail, hashPassword } from "../../utils/helpers";
+import { isValidEmail } from "../../utils/helpers";
 
 const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -31,26 +31,31 @@ const AdminLogin: React.FC = () => {
     setLoading(true);
 
     try {
-      const passwordHash = await hashPassword(formData.password);
-      const { data: adminData, error: adminError } = await supabase.rpc(
-        "admin_login",
-        {
-          p_email: formData.email.toLowerCase(),
-          p_password_hash: passwordHash,
-        }
-      );
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email.toLowerCase(),
+        password: formData.password,
+      });
 
-      if (adminError || !adminData || adminData.length === 0) {
+      if (authError) throw authError;
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError || !profile || profile.role !== "admin") {
+        await supabase.auth.signOut();
         setError("Unauthorized. Access denied.");
         setLoading(false);
         return;
       }
 
-      const admin = adminData[0];
-      localStorage.setItem("admin", JSON.stringify({ id: admin.id, email: admin.email, name: admin.name }));
+      localStorage.setItem("admin", JSON.stringify({ id: profile.id, email: profile.email, name: profile.full_name || "Admin" }));
       navigate("/admin");
     } catch (err: any) {
-      setError("System encryption error. Try again later.");
+      console.error("Login error:", err);
+      setError(err.message || "System encryption error. Try again later.");
     } finally {
       setLoading(false);
     }

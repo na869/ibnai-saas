@@ -27,6 +27,7 @@ import Menu from "./Menu";
 import Reports from "./Reports";
 import RestaurantSettings from "./RestaurantSettings";
 import Billing from "./Billing";
+import SubscriptionPage from "./SubscriptionPage";
 import { supabase } from "../../config/supabase";
 import { hasFeature } from "../../utils/helpers";
 
@@ -99,7 +100,7 @@ const RestaurantDashboard: React.FC = () => {
     { path: "/restaurant/orders", icon: ShoppingBag, label: "Live Orders", shortLabel: "Orders", feature: null },
     { path: "/restaurant/menu", icon: UtensilsCrossed, label: "Menu Manager", shortLabel: "Menu", feature: null },
     { path: "/restaurant/reports", icon: FileText, label: "Sales Reports", shortLabel: "Stats", feature: "analytics" },
-    { path: "/restaurant/billing", icon: CreditCard, label: "Billing & Plans", shortLabel: "Billing", feature: null },
+    { path: "/restaurant/subscription", icon: CreditCard, label: "Plans & Billing", shortLabel: "Billing", feature: null },
     { path: "/restaurant/settings", icon: Settings, label: "Settings", shortLabel: "Settings", feature: null },
   ];
 
@@ -254,6 +255,7 @@ const RestaurantDashboard: React.FC = () => {
             <Route path="orders" element={<Orders />} />
             <Route path="menu" element={<Menu />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="subscription" element={<SubscriptionPage />} />
             <Route path="billing" element={<Billing />} />
             <Route path="settings" element={<RestaurantSettings />} />
           </Routes>

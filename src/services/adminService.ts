@@ -2,8 +2,6 @@ import { supabase } from "../config/supabase";
 import type { RegistrationRequest, Restaurant } from "../config/supabase";
 import {
   generateSlug,
-  generateTempPassword,
-  hashPassword,
 } from "../utils/helpers";
 
 /**
@@ -55,19 +53,15 @@ export const approveRequest = async (
   requestId: string,
   data: {
     subscriptionPlan: string;
-    password?: string;
     internalNotes?: string;
   }
 ) => {
   try {
-    const passwordHash = data.password ? await hashPassword(data.password) : 'UPGRADE_NO_PASS';
-    
     const { data: result, error: rpcError } = await supabase.rpc(
       "admin_approve_request",
       {
         p_request_id: requestId,
         p_subscription_plan: data.subscriptionPlan,
-        p_password_hash: passwordHash,
         p_internal_notes: data.internalNotes || null,
       }
     );
@@ -80,11 +74,7 @@ export const approveRequest = async (
 
     return {
       success: true,
-      isUpgrade: result[0].is_upg,
       restaurantId: result[0].r_id,
-      credentials: data.password ? {
-        password: data.password,
-      } : null
     };
   } catch (error: any) {
     console.error("Approve error:", error);

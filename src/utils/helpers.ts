@@ -33,18 +33,6 @@ export const generateOrderNumber = (): string => {
 };
 
 /**
- * Generate temporary password
- */
-export const generateTempPassword = (): string => {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let password = "";
-  for (let i = 0; i < 8; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
-};
-
-/**
  * Calculate order totals
  */
 export const calculateOrderTotals = (items: any[]) => {
@@ -102,16 +90,6 @@ export const isValidEmail = (email: string): boolean => {
 export const isValidPhone = (phone: string): boolean => {
   const re = /^[6-9]\d{9}$/;
   return re.test(phone.replace(/[\s\-()]/g, ""));
-};
-
-/**
- * Hash password using SHA-256
- * Works on both HTTP and HTTPS (mobile and desktop)
- */
-export const hashPassword = async (password: string): Promise<string> => {
-  // Use crypto-js for consistent hashing across all platforms
-  const CryptoJS = (await import("crypto-js")).default;
-  return CryptoJS.SHA256(password).toString(CryptoJS.enc.Hex);
 };
 
 /**
